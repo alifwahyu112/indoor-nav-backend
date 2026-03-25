@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+  <div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-white shadow-md flex flex-col z-10">
+      <div class="p-6 border-b border-gray-200">
+        <h1 class="text-2xl font-bold text-blue-600">Dashboard</h1>
+      </div>
+
+      <nav class="flex-1 p-4 space-y-2">
+       <a href="/" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">👤 Data User</a>
+       <a href="/inav" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">📍 iNav</a>
+       <a href="/map" class="block py-2 px-3 rounded-md bg-blue-100 text-blue-700 font-medium">🗺️ Map</a>
+       <a href="/admin" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">🔑 Admin</a>
+      </nav>
+
+      <div class="p-4 border-t border-gray-200">
+        <a href="/logout" class="text-red-500 hover:underline font-medium">Logout</a>
+      </div>
+    </aside>
+
+    <main class="flex-1 h-full overflow-y-auto p-6 bg-gray-100">
+      
+      <header class="flex items-center justify-between mb-6">
+        <h2 class="text-3xl font-semibold"><%= title %></h2>
+        
+        <div class="relative w-64 md:w-80">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+            <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </span>
+          
+          <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Cari data..." class="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm">
+          
+          <button id="clearSearch" onclick="clearInput()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 hidden">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <form action="/tambah-map" method="POST" class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white p-6 rounded-lg shadow">
+        <input type="text" name="Floor_ID" placeholder="Floor_ID" class="border p-2 rounded-md" required>
+        <input type="text" name="room_name" placeholder="Room Name" class="border p-2 rounded-md" required>
+        <input type="text" name="coordinates" placeholder="Coordinates" class="border p-2 rounded-md" required>
+        <input type="text" name="room_id" placeholder="room id" class="border p-2 rounded-md" required>
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 col-span-2 md:col-span-1">Tambah</button>
+      </form>
+
+      <div class="mt-8 bg-white p-6 rounded-lg shadow mb-10"> 
+        <h3 class="text-2xl font-semibold mb-4">Daftar Data Map</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse border border-gray-200 text-sm">
+            <thead>
+              <tr class="bg-blue-50 text-left">
+                <th class="border px-4 py-2">ID</th>
+                <th class="border px-4 py-2">Floor_ID</th>
+                <th class="border px-4 py-2">Room Name</th>
+                <th class="border px-4 py-2">Coordinates</th>
+                <th class="border px-4 py-2">room_id</th>
+                <th class="border px-4 py-2 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% maps.forEach(map => { %>
+                <tr class="hover:bg-gray-50">
+                  <td class="border px-4 py-2"><%= map.id_map %></td>
+                  <td class="border px-4 py-2"><%= map.Floor_ID %></td>
+                  <td class="border px-4 py-2"><%= map.room_name %></td>
+                  <td class="border px-4 py-2"><%= map.coordinates %></td>
+                  <td class="border px-4 py-2"><%= map.room_id %></td>
+                  <td class="border px-4 py-2 text-center space-x-2">
+                    <button 
+                      onclick="openEditModal('<%= map.id_map %>', '<%= map.Floor_ID %>', '<%= map.room_name %>', '<%= map.coordinates %>', '<%= map.room_id %>')"
+                      class="text-blue-500 hover:underline font-semibold">
+                      Edit
+                    </button>
+                    <a href="/delete-map/<%= map.id_map %>" class="text-red-500 hover:underline" onclick="return confirm('Yakin hapus?');">Hapus</a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex justify-center items-center">
+    <div class="bg-white p-8 rounded-lg shadow-xl w-96 md:w-1/2">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="text-xl font-bold text-gray-800">Edit Data Map</h3>
+        <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+      </div>
+      
+      <form action="/update-map" method="POST" class="space-y-4">
+        <input type="hidden" id="edit_id_map" name="id_map">
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Floor ID</label>
+          <input type="text" id="edit_Floor_ID" name="Floor_ID" class="mt-1 w-full border p-2 rounded-md" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Room Name</label>
+          <input type="text" id="edit_room_name" name="room_name" class="mt-1 w-full border p-2 rounded-md" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Coordinates</label>
+          <input type="text" id="edit_coordinates" name="coordinates" class="mt-1 w-full border p-2 rounded-md" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Room ID</label>
+          <input type="text" id="edit_room_id" name="room_id" class="mt-1 w-full border p-2 rounded-md" required>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeEditModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Batal</button>
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // --- FUNGSI SEARCH (LIVE SEARCH) ---
+    function searchTable() {
+      const input = document.getElementById("searchInput");
+      const clearBtn = document.getElementById("clearSearch");
+      const filter = input.value.toLowerCase();
+      
+      // Munculkan tombol X jika ada teks, sembunyikan jika kosong
+      if (input.value.length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      const table = document.querySelector("table tbody");
+      const tr = table.getElementsByTagName("tr");
+
+      for (let i = 0; i < tr.length; i++) {
+        let match = false;
+        const td = tr[i].getElementsByTagName("td");
+
+        for (let j = 0; j < td.length; j++) {
+          if (td[j]) {
+            const textValue = td[j].textContent || td[j].innerText;
+            if (textValue.toLowerCase().indexOf(filter) > -1) {
+              match = true;
+              break;
+            }
+          }
+        }
+        tr[i].style.display = match ? "" : "none";
+      }
+    }
+
+    // --- FUNGSI CLEAR INPUT ---
+    function clearInput() {
+      const input = document.getElementById("searchInput");
+      input.value = ""; // Menghapus teks di input
+      searchTable();    // Jalankan searchTable untuk mereset tabel (menampilkan semua data)
+      input.focus();    // Fokuskan kembali kursor ke input
+    }
+
+    // --- FUNGSI MODAL ---
+    function openEditModal(id, floor, name, coords, rid) {
+      document.getElementById('edit_id_map').value = id;
+      document.getElementById('edit_Floor_ID').value = floor;
+      document.getElementById('edit_room_name').value = name;
+      document.getElementById('edit_coordinates').value = coords;
+      document.getElementById('edit_room_id').value = rid;
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+    }
+  </script>
+
+</body>
+</html>
