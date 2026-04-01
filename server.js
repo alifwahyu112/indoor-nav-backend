@@ -1,5 +1,5 @@
 const express = require("express");
-const mysql = require("mysql");
+const mysql = require("mysql2");
 const session = require("express-session");
 const path = require("path");
 const cors = require('cors');
@@ -22,11 +22,17 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 // ===== Koneksi Database =====
+// ===== Koneksi Database (Sudah Update SSL) =====
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "127.0.0.1",
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "indoor navigation"
+  database: process.env.DB_NAME || "indoor_navigation", // Gunakan _ (underscore)
+  port: process.env.DB_PORT || 4000,
+  ssl: {
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: true
+  }
 });
 
 db.connect(err => {
