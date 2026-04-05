@@ -338,7 +338,7 @@ app.get("/api/map/:id", (req, res) => {
 });
 
 app.get("/api/get-room-list", (req, res) => {
-    const sql = "SELECT room_id, room_name FROM map";
+    const sql = "SELECT room_id, room_name FROM map ORDER BY room_name ASC";
     db.query(sql, (err, result) => {
         if (err) return res.json({ status: false, message: "Gagal mengambil daftar ruangan" });
         res.json({ status: true, data: result });
