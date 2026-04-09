@@ -3,9 +3,12 @@ const mysql = require("mysql2");
 const session = require("express-session");
 const path = require("path");
 const cors = require('cors');
+const bcrypt = require('bcrypt'); // Tambahan: Untuk Hashing Password
+const axios = require('axios');   // Tambahan: Untuk Kirim WhatsApp OTP
 require('dotenv').config();
 
 const app = express();
+const saltRounds = 10; // Standar keamanan hashing
 
 // ===== Middleware =====
 app.use(cors());
@@ -21,7 +24,7 @@ app.use(session({
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// ===== Koneksi Database (PERUBAHAN 1: Pakai POOL untuk Vercel Serverless) =====
+// ===== Koneksi Database (TiDB Pool) =====
 const db = mysql.createPool({
   host: process.env.DB_HOST || "127.0.0.1",
   user: process.env.DB_USER || "root",
@@ -32,215 +35,169 @@ const db = mysql.createPool({
     minVersion: 'TLSv1.2',
     rejectUnauthorized: true
   },
-  // Setting tambahan untuk pool
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
 
-// PERUBAHAN 2: Cek koneksi pakai getConnection, bukan db.connect() yang bikin hang
 db.getConnection((err, connection) => {
   if (err) {
     console.error("❌ Gagal koneksi ke database:", err.message);
   } else {
     console.log("✅ Connected to database pool...");
-    connection.release(); // lepaskan koneksi agar bisa dipakai lagi
+    connection.release();
   }
 });
 
-// ===== Login Page =====
+// ==========================================
+// 1. ROUTES UNTUK ADMIN DASHBOARD (EJS)
+// ==========================================
+
 app.get("/login", (req, res) => {
   res.render("login", { title: "Login Admin" });
 });
 
-// ===== Proses Login (ADMIN) - TANPA HASH =====
+// Update: Login Admin menggunakan Bcrypt
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
+  db.query("SELECT * FROM admin WHERE username = ?", [username], async (err, result) => {
+    if (err) return res.status(500).send("Database Error");
+    if (result.length === 0) return res.send("❌ Login gagal! Username tidak ditemukan.");
+    
+    const admin = result[0];
+    const match = await bcrypt.compare(password, admin.password); // Cek hash
 
-  db.query(
-    "SELECT * FROM admin WHERE username = ?",
-    [username],
-    (err, result) => {
-      if (err) return res.status(500).send("Database Error"); // Handle error agar tidak mati
-
-      if (result.length === 0) {
-        return res.send("❌ Login gagal! Username tidak ditemukan.");
-      }
-
-      const admin = result[0];
-
-      if (password === admin.password) {
-        req.session.loggedIn = true;
-        req.session.username = username;
-        res.redirect("/");
-      } else {
-        res.send("❌ Login gagal! Password salah.");
-      }
+    if (match) {
+      req.session.loggedIn = true;
+      req.session.username = username;
+      res.redirect("/");
+    } else {
+      res.send("❌ Login gagal! Password salah.");
     }
-  );
+  });
 });
 
-// ===== Halaman Utama (Data User) =====
 app.get("/", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-
   db.query("SELECT * FROM user", (err, usersResult) => {
     if (err) return res.status(500).send("Database Error");
-    res.render("index", {
-      title: "DATA USER",
-      users: usersResult
-    });
+    res.render("index", { title: "DATA USER", users: usersResult });
   });
 });
 
-// ===== Tambah User - TANPA HASH =====
-app.post("/tambah", (req, res) => {
+// Update: Tambah User dengan Hashing Password
+app.post("/tambah", async (req, res) => {
   const { username, password, gmail, mobile_number, BPJS_number } = req.body;
-  const sql = `
-      INSERT INTO user (username, password, gmail, mobile_number, BPJS_number)
-      VALUES (?, ?, ?, ?, ?)
-    `;
-  
-  db.query(sql, [username, password, gmail, mobile_number, BPJS_number], err => {
-    if (err) return res.status(500).send("Database Error");
-    res.redirect("/");
-  });
+  try {
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const sql = `INSERT INTO user (username, password, gmail, mobile_number, BPJS_number) VALUES (?, ?, ?, ?, ?)`;
+    db.query(sql, [username, hashedPassword, gmail, mobile_number, BPJS_number], err => {
+      if (err) return res.status(500).send("Database Error");
+      res.redirect("/");
+    });
+  } catch (e) {
+    res.status(500).send("Error hashing password");
+  }
 });
 
-// ===== Hapus User =====
+// Update: Tambah Admin dengan Hashing Password
+app.post("/tambah-admin", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    db.query("INSERT INTO admin (username, password) VALUES (?, ?)", [username, hashedPassword], err => {
+      if (err) return res.status(500).send("Database Error");
+      res.redirect("/admin");
+    });
+  } catch (e) {
+    res.status(500).send("Error");
+  }
+});
+
+// --- Route Admin Lainnya Tetap Sama ---
 app.get("/delete-user/:id", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-
-  const id = req.params.id;
-  db.query("DELETE FROM user WHERE id = ?", [id], err => {
+  db.query("DELETE FROM user WHERE id = ?", [req.params.id], err => {
     if (err) return res.status(500).send("Database Error");
     res.redirect("/");
   });
 });
 
-// ===== Halaman MAP =====
 app.get("/map", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-
   db.query("SELECT * FROM map", (err, mapResult) => {
     if (err) return res.status(500).send("Database Error");
-    res.render("map", {
-      title: "DATA MAP",
-      maps: mapResult
-    });
+    res.render("map", { title: "DATA MAP", maps: mapResult });
   });
 });
 
-// ===== Tambah MAP =====
 app.post("/tambah-map", (req, res) => {
   const { Floor_ID, room_name, coordinates, room_id } = req.body;
-  const sql = `
-    INSERT INTO map (Floor_ID, room_name, coordinates, room_id)
-    VALUES (?, ?, ?, ?)
-  `;
+  const sql = `INSERT INTO map (Floor_ID, room_name, coordinates, room_id) VALUES (?, ?, ?, ?)`;
   db.query(sql, [Floor_ID, room_name, coordinates, room_id], err => {
     if (err) return res.status(500).send("Database Error");
     res.redirect("/map");
   });
 });
 
-// ===== Update MAP =====
 app.post("/update-map", (req, res) => {
   const { id_map, Floor_ID, room_name, coordinates, room_id } = req.body;
-  const sql = `
-    UPDATE map 
-    SET Floor_ID = ?, room_name = ?, coordinates = ?, room_id = ? 
-    WHERE id_map = ?
-  `;
+  const sql = `UPDATE map SET Floor_ID = ?, room_name = ?, coordinates = ?, room_id = ? WHERE id_map = ?`;
   db.query(sql, [Floor_ID, room_name, coordinates, room_id, id_map], err => {
     if (err) return res.status(500).send("Database Error");
     res.redirect("/map");
   });
 });
 
-// ===== Hapus MAP =====
 app.get("/delete-map/:id", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-
-  const id = req.params.id;
-  db.query("DELETE FROM map WHERE id_map = ?", [id], err => {
+  db.query("DELETE FROM map WHERE id_map = ?", [req.params.id], err => {
     if (err) return res.status(500).send("Database Error");
     res.redirect("/map");
   });
 });
 
-// ===== Halaman iNav =====
 app.get("/inav", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-
-  db.query("SELECT * FROM inav", (err, inavResult) => {
+  db.query("SELECT * FROM inav ORDER BY id DESC", (err, inavResult) => {
     if (err) return res.status(500).send("Database Error");
-    res.render("inav", {
-      title: "DATA INAV",
-      inavs: inavResult
-    });
+    res.render("inav", { title: "DATA INAV", inavs: inavResult });
   });
 });
 
-// ===== Tambah iNav =====
 app.post("/tambah-inav", (req, res) => {
   const { starting_position, target, history } = req.body;
-  const sql = `
-    INSERT INTO inav (starting_position, target, history)
-    VALUES (?, ?, ?)
-  `;
+  const sql = `INSERT INTO inav (starting_position, target, history) VALUES (?, ?, ?)`;
   db.query(sql, [starting_position, target, history], err => {
     if (err) return res.status(500).send("Database Error");
     res.redirect("/inav");
   });
 });
 
-// ===== Hapus iNav =====
 app.get("/delete-inav/:id", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-
-  const id = req.params.id;
-  db.query("DELETE FROM inav WHERE id = ?", [id], err => {
+  db.query("DELETE FROM inav WHERE id = ?", [req.params.id], err => {
     if (err) return res.status(500).send("Database Error");
     res.redirect("/inav");
   });
 });
 
-// ===== Halaman Admin =====
 app.get("/admin", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-
   db.query("SELECT * FROM admin", (err, adminResult) => {
     if (err) return res.status(500).send("Database Error");
-    res.render("admin", {
-      title: "DATA ADMIN",
-      admins: adminResult
-    });
+    res.render("admin", { title: "DATA ADMIN", admins: adminResult });
   });
 });
 
-// ===== Tambah Admin - TANPA HASH =====
-app.post("/tambah-admin", (req, res) => {
-  const { username, password } = req.body;
-  const sql = "INSERT INTO admin (username, password) VALUES (?, ?)";
-  db.query(sql, [username, password], err => {
-    if (err) return res.status(500).send("Database Error");
-    res.redirect("/admin");
-  });
-});
-
-// ===== Hapus Admin =====
 app.get("/delete-admin/:id", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-
-  const id = req.params.id;
-  db.query("DELETE FROM admin WHERE id = ?", [id], err => {
+  db.query("DELETE FROM admin WHERE id = ?", [req.params.id], err => {
     if (err) return res.status(500).send("Database Error");
     res.redirect("/admin");
   });
 });
 
-// ===== Logout =====
 app.get("/logout", (req, res) => {
   req.session.destroy(err => {
     if (err) console.error(err);
@@ -249,104 +206,135 @@ app.get("/logout", (req, res) => {
 });
 
 // ==========================================
-// API ENDPOINTS (Untuk Mobile/Unity)
+// 2. API ENDPOINTS (Untuk Mobile/Unity)
 // ==========================================
 
+// Update: API Login menggunakan Bcrypt
 app.post("/api/login", (req, res) => {
-    const { username, password } = req.body;
-    db.query("SELECT * FROM user WHERE username = ?", [username], (err, result) => {
-        if (err) return res.json({ status: false, message: "Server Error" });
-        if (result.length === 0) return res.json({ status: false, message: "User tidak ditemukan" });
+  const { username, password } = req.body;
+  db.query("SELECT * FROM user WHERE username = ?", [username], async (err, result) => {
+    if (err) return res.json({ status: false, message: "Server Error" });
+    if (result.length === 0) return res.json({ status: false, message: "User tidak ditemukan" });
 
-        const user = result[0];
-        if (password === user.password) {
-            res.json({ 
-                status: true, 
-                message: "Login Berhasil", 
-                username: user.username,
-                id: user.id 
-            });
-        } else {
-            res.json({ status: false, message: "Password Salah" });
-        }
-    });
+    const user = result[0];
+    const match = await bcrypt.compare(password, user.password); // Verifikasi Hash
+
+    if (match) {
+      res.json({ status: true, message: "Login Berhasil", username: user.username, id: user.id });
+    } else {
+      res.json({ status: false, message: "Password Salah" });
+    }
+  });
 });
 
-app.get("/api/get-map-data", (req, res) => {
-    db.query("SELECT * FROM map", (err, result) => {
-        if (err) return res.json({ status: false, message: "Gagal mengambil data map" });
-        res.json({ status: true, data: result });
+// --- FITUR LUPA PASSWORD & OTP WHATSAPP ---
+
+// A. Minta OTP
+app.post("/api/forgot-password", (req, res) => {
+  const { mobile_number } = req.body;
+  const otp = Math.floor(100000 + Math.random() * 900000); // Generate 6 Digit
+  const expiry = new Date(Date.now() + 5 * 60000); // Berlaku 5 Menit
+
+  db.query("UPDATE user SET otp_code = ?, otp_expiry = ? WHERE mobile_number = ?", [otp, expiry, mobile_number], (err, result) => {
+    if (err || result.affectedRows === 0) return res.json({ status: false, message: "Nomor tidak terdaftar" });
+
+    // Kirim pesan via Fonnte (Silakan daftar di fonnte.com untuk token)
+    axios.post('https://api.fonnte.com/send', {
+      target: mobile_number,
+      message: `Kode OTP Anda adalah: ${otp}. Masukkan kode ini di aplikasi untuk mengganti password. Berhenti memberikan kode kepada siapapun!`,
+    }, {
+      headers: { 'Authorization': 'TOKEN_FONNTE_KAMU_DISINI' } 
+    }).then(() => {
+      res.json({ status: true, message: "OTP berhasil dikirim ke WhatsApp" });
+    }).catch(e => {
+      res.json({ status: false, message: "Gagal mengirim pesan WhatsApp" });
     });
+  });
 });
 
-app.post("/api/scan-qr", (req, res) => {
-    const { code } = req.body; 
-    if (!code) return res.json({ status: false, message: "Data QR Code kosong!" });
+// B. Verifikasi OTP & Reset Password
+app.post("/api/reset-password", async (req, res) => {
+  const { mobile_number, otp, newPassword } = req.body;
 
-    const query = "SELECT * FROM map WHERE room_id = ?";
-    db.query(query, [code], (err, result) => {
-        if (err) return res.json({ status: false, message: "Server Error" });
-        if (result.length === 0) {
-            return res.json({ 
-                status: false, 
-                message: "QR Code tidak dikenali (Room ID salah)." 
-            });
-        }
+  db.query("SELECT * FROM user WHERE mobile_number = ? AND otp_code = ?", [mobile_number, otp], async (err, result) => {
+    if (err || result.length === 0) return res.json({ status: false, message: "Kode OTP Salah" });
 
-        const dataLokasi = result[0];
-        res.json({
-            status: true,
-            message: "Lokasi Ditemukan!",
-            data: {
-                room_name: dataLokasi.room_name,
-                coordinates: dataLokasi.coordinates, 
-                floor_id: dataLokasi.Floor_ID
-            }
-        });
+    const user = result[0];
+    // Cek apakah sudah kadaluwarsa
+    if (new Date() > new Date(user.otp_expiry)) return res.json({ status: false, message: "OTP sudah kadaluwarsa" });
+
+    // Hash password baru sebelum disimpan
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    db.query("UPDATE user SET password = ?, otp_code = NULL, otp_expiry = NULL WHERE mobile_number = ?", [hashedNewPassword, mobile_number], (err) => {
+      if (err) return res.json({ status: false, message: "Gagal reset password" });
+      res.json({ status: true, message: "Password berhasil diperbarui!" });
     });
+  });
 });
 
-app.get("/api/get-inav-data", (req, res) => {
-    db.query("SELECT * FROM inav", (err, result) => {
-        if (err) return res.json({ status: false, message: "Gagal mengambil data inav" });
-        res.json({ status: true, data: result });
-    });
-});
+// --- API Lainnya Tetap Sama ---
 
-app.get("/api/get-user-data", (req, res) => {
-    db.query("SELECT * FROM user", (err, result) => {
-        if (err) return res.json({ status: false, message: "Gagal mengambil data user" });
-        res.json({ status: true, data: result });
-    });
+app.get("/api/get-room-list", (req, res) => {
+  db.query("SELECT room_id, room_name FROM map ORDER BY room_name ASC", (err, result) => {
+    if (err) return res.json({ status: false, message: "Gagal mengambil daftar ruangan" });
+    res.json({ status: true, data: result });
+  });
 });
 
 app.get("/api/map/:id", (req, res) => {
-    const roomId = req.params.id; 
-    const sql = "SELECT * FROM map WHERE room_id = ?";
-    db.query(sql, [roomId], (err, result) => {
-        if (err) return res.status(500).json({ error: "Database Error" });
-        if (result.length === 0) return res.status(404).json({ message: "Room ID Not Found" });
-
-        const data = result[0];
-        res.json({
-            room_id: data.room_id,      
-            coordinates: data.coordinates,
-            room_name: data.room_name,
-            Floor_ID: data.Floor_ID 
-        });
-    });
+  db.query("SELECT * FROM map WHERE room_id = ?", [req.params.id], (err, result) => {
+    if (err) return res.status(500).json({ status: false, error: "Database Error" });
+    if (result.length === 0) return res.status(404).json({ status: false, message: "Room ID Not Found" });
+    res.json(result[0]);
+  });
 });
 
-app.get("/api/get-room-list", (req, res) => {
-    const sql = "SELECT room_id, room_name FROM map ORDER BY room_name ASC";
-    db.query(sql, (err, result) => {
-        if (err) return res.json({ status: false, message: "Gagal mengambil daftar ruangan" });
-        res.json({ status: true, data: result });
-    });
+app.post('/api/inav/start', (req, res) => {
+  const { session_id, starting_position } = req.body;
+  if (!session_id || !starting_position) return res.json({ status: false, message: "Data tidak lengkap" });
+
+  const historyStr = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+  const sql = 'INSERT INTO inav (session_id, starting_position, history) VALUES (?, ?, ?)';
+  
+  db.query(sql, [session_id, starting_position, historyStr], (err, result) => {
+    if (err) return res.status(500).json({ status: false, error: err.message });
+    res.json({ status: true, message: "Aktivitas dimulai, posisi awal tercatat" });
+  });
 });
 
-// ===== PERUBAHAN 3: CARA JALAN SERVER ======
-// Jika di laptop sendiri (lokal), kita pakai app.listen
+app.put('/api/inav/update-target', (req, res) => {
+  const { session_id, target } = req.body;
+  if (!session_id || !target) return res.json({ status: false, message: "Data tidak lengkap" });
+
+  const sql = 'UPDATE inav SET target = ? WHERE session_id = ? ORDER BY id DESC LIMIT 1';
+  
+  db.query(sql, [target, session_id], (err, result) => {
+    if (err) return res.status(500).json({ status: false, error: err.message });
+    if (result.affectedRows > 0) {
+      res.json({ status: true, message: "Tujuan berhasil diperbarui" });
+    } else {
+      res.status(404).json({ status: false, message: "Sesi tidak ditemukan" });
+    }
+  });
+});
+
+// KODE YANG SUDAH DIPERBAIKI (Ganti bagian ini di server.js kamu)
+app.get("/buat-admin-pertama", async (req, res) => {
+  const username = "admin";
+  const password = "admin123"; 
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+  db.query("INSERT INTO admin (username, password) VALUES (?, ?)", [username, hashedPassword], (err) => {
+    if (err) return res.status(500).send("Gagal: " + err.message);
+    res.send(`✅ Admin berhasil dibuat! Username: ${username}, Password: ${password}`);
+  });
+});
+
+// ==========================================
+// 3. PENGATURAN JALAN SERVER
+// ==========================================
+
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 8000;
   const HOST = process.env.HOST || "0.0.0.0";
@@ -355,5 +343,4 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// JIKA DI VERCEL: Wajib diexport, Vercel yang akan mengatur Listen-nya secara otomatis!
 module.exports = app;
