@@ -17,9 +17,7 @@
 
       <nav class="flex-1 p-4 space-y-2">
         <a href="/" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">👤 Data User</a>
-        
         <a href="/inav" class="block py-2 px-3 rounded-md bg-blue-100 text-blue-700 font-medium">📍 iNav</a>
-        
         <a href="/map" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">🗺️ Map</a>
         <a href="/admin" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">🔑 Admin</a>
       </nav>
@@ -38,9 +36,7 @@
           <span class="absolute inset-y-0 left-0 flex items-center pl-3">
             <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </span>
-          
           <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Cari data iNav..." class="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm">
-          
           <button id="clearSearch" onclick="clearInput()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 hidden">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -49,14 +45,13 @@
         </div>
       </header>
 
-      <form action="/tambah-inav" method="POST" class="grid grid-cols-2 md:grid-cols-5 gap-4 bg-white p-6 rounded-lg shadow">
-        <input type="text" name="suser_id" placeholder="user_id" class="border p-2 rounded-md" required>
-        <input type="text" name="mulai" placeholder="mulai" class="border p-2 rounded-md" required>
-        <input type="text" name="tujuan" placeholder="tujuan" class="border p-2 rounded-md" required>
-        <input type="text" name="koordinat_awal" placeholder="koordinat_awal" class="border p-2 rounded-md" required>
-        <input type="text" name="tanggal" placeholder="tanggal" class="border p-2 rounded-md" required>
+      <form action="/tambah-inav" method="POST" class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-6 rounded-lg shadow">
+        <input type="number" name="user_id" placeholder="User ID" class="border p-2 rounded-md" required>
+        <input type="text" name="mulai" placeholder="Mulai (Ruangan)" class="border p-2 rounded-md" required>
+        <input type="text" name="tujuan" placeholder="Tujuan" class="border p-2 rounded-md" required>
+        <input type="text" name="koordinat_awal" placeholder="Koordinat (x,y,z)" class="border p-2 rounded-md" required>
 
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 col-span-2 md:col-span-1">
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
             Tambah
         </button>
       </form>
@@ -69,9 +64,11 @@
             <thead>
               <tr class="bg-blue-50 text-left">
                 <th class="border px-4 py-2">ID</th>
-                <th class="border px-4 py-2">Starting Position</th>
-                <th class="border px-4 py-2">Target</th>
-                <th class="border px-4 py-2">History</th>
+                <th class="border px-4 py-2">User ID</th>
+                <th class="border px-4 py-2">Mulai</th>
+                <th class="border px-4 py-2">Tujuan</th>
+                <th class="border px-4 py-2">Koordinat</th>
+                <th class="border px-4 py-2">Tanggal</th>
                 <th class="border px-4 py-2 text-center">Aksi</th>
               </tr>
             </thead>
@@ -79,53 +76,46 @@
               <% if (inavs && inavs.length > 0) { %>
                 <% inavs.forEach((row) => { %>
                   <tr class="hover:bg-gray-50">
-                    <td class="border px-4 py-2"><%= row.id %></td>
-                    <td class="border px-4 py-2"><%= row.starting_position %></td>
-                    <td class="border px-4 py-2"><%= row.target %></td>
-                    <td class="border px-4 py-2"><%= row.history %></td>
+                    <td class="border px-4 py-2 font-bold"><%= row.id %></td>
+                    <td class="border px-4 py-2 text-blue-600">#<%= row.user_id %></td>
+                    <td class="border px-4 py-2"><%= row.mulai %></td>
+                    <td class="border px-4 py-2"><%= row.tujuan %></td>
+                    <td class="border px-4 py-2 font-mono text-xs"><%= row.koordinat_awal %></td>
+                    <td class="border px-4 py-2">
+                        <%= new Date(row.tanggal).toLocaleString('id-ID') %>
+                    </td>
                     <td class="border px-4 py-2 text-center">
-                      <a href="/delete-inav/<%= row.id %>" class="text-red-500 hover:underline" onclick="return confirm('Yakin ingin menghapus data ini?');">Hapus</a>
+                      <a href="/delete-inav/<%= row.id %>" class="bg-red-100 text-red-600 px-3 py-1 rounded-md hover:bg-red-200" onclick="return confirm('Yakin ingin menghapus riwayat ini?');">Hapus</a>
                     </td>
                   </tr>
                 <% }) %>
               <% } else { %>
                 <tr>
-                  <td colspan="6" class="text-center py-4 text-gray-500">Belum ada data iNav.</td>
+                  <td colspan="7" class="text-center py-10 text-gray-500 italic">Belum ada data riwayat perjalanan.</td>
                 </tr>
               <% } %>
             </tbody>
           </table>
         </div>
       </div>
-
     </main>
-
   </div>
 
   <script>
-    // FUNGSI LIVE SEARCH
     function searchTable() {
       const input = document.getElementById("searchInput");
       const clearBtn = document.getElementById("clearSearch");
       const filter = input.value.toLowerCase();
       
-      // Munculkan tombol X jika ada teks, sembunyikan jika kosong
-      if (input.value.length > 0) {
-        clearBtn.classList.remove('hidden');
-      } else {
-        clearBtn.classList.add('hidden');
-      }
+      input.value.length > 0 ? clearBtn.classList.remove('hidden') : clearBtn.classList.add('hidden');
 
       const table = document.querySelector("table tbody");
       const tr = table.getElementsByTagName("tr");
 
       for (let i = 0; i < tr.length; i++) {
-        // Lewati baris jika itu adalah baris "Belum ada data"
         if (tr[i].cells.length < 2) continue;
-
         let match = false;
         const td = tr[i].getElementsByTagName("td");
-
         for (let j = 0; j < td.length; j++) {
           if (td[j]) {
             const textValue = td[j].textContent || td[j].innerText;
@@ -139,14 +129,12 @@
       }
     }
 
-    // FUNGSI CLEAR INPUT
     function clearInput() {
       const input = document.getElementById("searchInput");
-      input.value = ""; // Menghapus teks
-      searchTable();    // Reset tampilan tabel (menampilkan semua)
-      input.focus();    // Fokus kembali ke input
+      input.value = "";
+      searchTable();
+      input.focus();
     }
   </script>
-
 </body>
 </html>
