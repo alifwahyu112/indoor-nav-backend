@@ -157,28 +157,28 @@ app.get("/delete-map/:id", (req, res) => {
   });
 });
 
-app.get("/inav", (req, res) => {
+app.get("/riwayat_perjalanan", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  db.query("SELECT * FROM inav ORDER BY id DESC", (err, inavResult) => {
+  db.query("SELECT * FROM riwayat_perjalanan ORDER BY id DESC", (err, riwayat_perjalananResult) => {
     if (err) return res.status(500).send("Database Error");
-    res.render("inav", { title: "DATA INAV", inavs: inavResult });
+    res.render("riwayat_perjalanan", { title: "DATA RIWAYAT PERJALANAN", riwayat_perjalanan: riwayat_perjalananResult });
   });
 });
 
-app.post("/tambah-inav", (req, res) => {
+app.post("/tambah-riwayat_perjalanan", (req, res) => {
   const { user_id, mulai, tujuan, koordinat_awal, tanggal } = req.body;
-  const sql = `INSERT INTO inav (user_id, muali, tujuan, koordinat_awal, tanggal) VALUES (?, ?, ?, ?, ?)`;
+  const sql = `INSERT INTO riwayat_perjalanan (user_id, muali, tujuan, koordinat_awal, tanggal) VALUES (?, ?, ?, ?, ?)`;
   db.query(sql, [user_id, mulai, tujuan, koordinat_awal, tanggal], err => {
     if (err) return res.status(500).send("Database Error");
-    res.redirect("/inav");
+    res.redirect("/riwayat_perjalanan");
   });
 });
 
-app.get("/delete-inav/:id", (req, res) => {
+app.get("/delete-riwayat_perjalanan/:id", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  db.query("DELETE FROM inav WHERE id = ?", [req.params.id], err => {
+  db.query("DELETE FROM riwayat_perjalanan WHERE id = ?", [req.params.id], err => {
     if (err) return res.status(500).send("Database Error");
-    res.redirect("/inav");
+    res.redirect("/riwayat_perjalanan");
   });
 });
 
@@ -290,12 +290,12 @@ app.get("/api/map/:id", (req, res) => {
   });
 });
 
-app.post('/api/inav/start', (req, res) => {
+app.post('/api/riwayat_perjalanan/start', (req, res) => {
   const { session_id, starting_position } = req.body;
   if (!session_id || !starting_position) return res.json({ status: false, message: "Data tidak lengkap" });
 
   const historyStr = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-  const sql = 'INSERT INTO inav (session_id, starting_position, history) VALUES (?, ?, ?)';
+  const sql = 'INSERT INTO riwayat_perjalanan (session_id, starting_position, history) VALUES (?, ?, ?)';
   
   db.query(sql, [session_id, starting_position, historyStr], (err, result) => {
     if (err) return res.status(500).json({ status: false, error: err.message });
@@ -303,11 +303,11 @@ app.post('/api/inav/start', (req, res) => {
   });
 });
 
-app.put('/api/inav/update-target', (req, res) => {
+app.put('/api/riwayat_perjalanan/update-target', (req, res) => {
   const { session_id, target } = req.body;
   if (!session_id || !target) return res.json({ status: false, message: "Data tidak lengkap" });
 
-  const sql = 'UPDATE inav SET target = ? WHERE session_id = ? ORDER BY id DESC LIMIT 1';
+  const sql = 'UPDATE riwayat_perjalanan SET target = ? WHERE session_id = ? ORDER BY id DESC LIMIT 1';
   
   db.query(sql, [target, session_id], (err, result) => {
     if (err) return res.status(500).json({ status: false, error: err.message });
