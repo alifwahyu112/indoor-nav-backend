@@ -166,9 +166,9 @@ app.get("/inav", (req, res) => {
 });
 
 app.post("/tambah-inav", (req, res) => {
-  const { starting_position, target, history } = req.body;
-  const sql = `INSERT INTO inav (starting_position, target, history) VALUES (?, ?, ?)`;
-  db.query(sql, [starting_position, target, history], err => {
+  const { user_id, mulai, tujuan, koordinat_awal, tanggal } = req.body;
+  const sql = `INSERT INTO inav (user_id, tujuan, koordinat_awal, tanggal) VALUES (?, ?, ?)`;
+  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, tanggal], err => {
     if (err) return res.status(500).send("Database Error");
     res.redirect("/inav");
   });

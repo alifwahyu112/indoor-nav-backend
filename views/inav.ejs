@@ -50,10 +50,12 @@
       </header>
 
       <form action="/tambah-inav" method="POST" class="grid grid-cols-2 md:grid-cols-5 gap-4 bg-white p-6 rounded-lg shadow">
-        <input type="text" name="starting_position" placeholder="Starting Position" class="border p-2 rounded-md" required>
-        <input type="text" name="target" placeholder="Target" class="border p-2 rounded-md" required>
-        <input type="text" name="history" placeholder="History" class="border p-2 rounded-md" required>
-        
+        <input type="text" name="suser_id" placeholder="user_id" class="border p-2 rounded-md" required>
+        <input type="text" name="mulai" placeholder="mulai" class="border p-2 rounded-md" required>
+        <input type="text" name="tujuan" placeholder="tujuan" class="border p-2 rounded-md" required>
+        <input type="text" name="koordinat_awal" placeholder="koordinat_awal" class="border p-2 rounded-md" required>
+        <input type="text" name="tanggal" placeholder="tanggal" class="border p-2 rounded-md" required>
+
         <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 col-span-2 md:col-span-1">
             Tambah
         </button>
