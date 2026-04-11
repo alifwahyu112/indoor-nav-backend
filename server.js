@@ -38,6 +38,15 @@ const db = mysql.createPool({
 // 1. ROUTES WEB DASHBOARD (EJS)
 // ==========================================
 
+app.get("/", (req, res) => {
+    // Jika sudah login, lempar ke riwayat, jika belum ke login
+    if (req.session.loggedIn) {
+        res.redirect("/riwayat_perjalanan");
+    } else {
+        res.redirect("/login");
+    }
+});
+
 app.get("/login", (req, res) => res.render("login", { title: "Login Admin" }));
 
 app.post("/login", (req, res) => {
