@@ -13,10 +13,15 @@ const saltRounds = 10;
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// PENTING: Agar session awet di Vercel
+app.set('trust proxy', 1); 
+
 app.use(session({
   secret: process.env.SESSION_SECRET || "secret-key",
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  cookie: { secure: process.env.NODE_ENV === 'production' } // Secure jika di Vercel
 }));
 
 app.set("view engine", "ejs");
@@ -54,6 +59,7 @@ app.post("/login", (req, res) => {
   db.query("SELECT * FROM admin WHERE username = ?", [username], async (err, result) => {
     if (err) return res.status(500).send("Database Error");
     if (result.length === 0) return res.send("❌ Login gagal! Username tidak ditemukan.");
+    
     const match = await bcrypt.compare(password, result[0].password); 
     if (match) {
       req.session.loggedIn = true;
@@ -82,7 +88,7 @@ app.post("/tambah-riwayat_perjalanan", (req, res) => {
   });
 });
 
-// --- MAP (Pintu yang tadi hilang) ---
+// --- MAP (DATA RUANGAN) ---
 app.get("/map", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
   db.query("SELECT * FROM map", (err, mapResult) => {
@@ -91,7 +97,36 @@ app.get("/map", (req, res) => {
   });
 });
 
-// --- ADMIN (Pintu yang tadi hilang) ---
+// FIX: Tambah Map
+app.post("/tambah-map", (req, res) => {
+  const { Floor_ID, room_name, coordinates, room_id } = req.body;
+  const sql = `INSERT INTO map (Floor_ID, room_name, coordinates, room_id) VALUES (?, ?, ?, ?)`;
+  db.query(sql, [Floor_ID, room_name, coordinates, room_id], err => {
+    if (err) return res.status(500).send(err.message);
+    res.redirect("/map");
+  });
+});
+
+// FIX UTAMA: Update Map (Mencegah Error Cannot POST /update-map)
+app.post("/update-map", (req, res) => {
+  const { id_map, Floor_ID, room_name, coordinates, room_id } = req.body;
+  const sql = `UPDATE map SET Floor_ID = ?, room_name = ?, coordinates = ?, room_id = ? WHERE id_map = ?`;
+  db.query(sql, [Floor_ID, room_name, coordinates, room_id, id_map], err => {
+    if (err) return res.status(500).send("Gagal update: " + err.message);
+    res.redirect("/map");
+  });
+});
+
+// FIX: Hapus Map
+app.get("/delete-map/:id", (req, res) => {
+  if (!req.session.loggedIn) return res.redirect("/login");
+  db.query("DELETE FROM map WHERE id_map = ?", [req.params.id], err => {
+    if (err) return res.status(500).send(err.message);
+    res.redirect("/map");
+  });
+});
+
+// --- ADMIN ---
 app.get("/admin", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
   db.query("SELECT * FROM admin", (err, adminResult) => {
@@ -131,6 +166,9 @@ app.post("/api/save-history", (req, res) => {
   });
 });
 
+// ==========================================
+// 3. JALANKAN SERVER
+// ==========================================
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
 
