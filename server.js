@@ -38,13 +38,13 @@ const db = mysql.createPool({
 // 1. ROUTES WEB DASHBOARD (EJS)
 // ==========================================
 
+// --- HALAMAN UTAMA (Data User) ---
 app.get("/", (req, res) => {
-    // Jika sudah login, lempar ke riwayat, jika belum ke login
-    if (req.session.loggedIn) {
-        res.redirect("/riwayat_perjalanan");
-    } else {
-        res.redirect("/login");
-    }
+  if (!req.session.loggedIn) return res.redirect("/login");
+  db.query("SELECT * FROM user", (err, usersResult) => {
+    if (err) return res.status(500).send("Database Error");
+    res.render("index", { title: "DATA USER", users: usersResult });
+  });
 });
 
 app.get("/login", (req, res) => res.render("login", { title: "Login Admin" }));
@@ -64,6 +64,7 @@ app.post("/login", (req, res) => {
   });
 });
 
+// --- RIWAYAT PERJALANAN ---
 app.get("/riwayat_perjalanan", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
   db.query("SELECT * FROM riwayat_perjalanan ORDER BY id DESC", (err, result) => {
@@ -81,11 +82,32 @@ app.post("/tambah-riwayat_perjalanan", (req, res) => {
   });
 });
 
+// --- MAP (Pintu yang tadi hilang) ---
+app.get("/map", (req, res) => {
+  if (!req.session.loggedIn) return res.redirect("/login");
+  db.query("SELECT * FROM map", (err, mapResult) => {
+    if (err) return res.status(500).send("Database Error");
+    res.render("map", { title: "DATA MAP", maps: mapResult });
+  });
+});
+
+// --- ADMIN (Pintu yang tadi hilang) ---
+app.get("/admin", (req, res) => {
+  if (!req.session.loggedIn) return res.redirect("/login");
+  db.query("SELECT * FROM admin", (err, adminResult) => {
+    if (err) return res.status(500).send("Database Error");
+    res.render("admin", { title: "DATA ADMIN", admins: adminResult });
+  });
+});
+
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => res.redirect("/login"));
+});
+
 // ==========================================
 // 2. API ENDPOINTS (YANG DICARI UNITY)
 // ==========================================
 
-// PENTING: Route ini yang bikin eror 404 kalau nggak ada
 app.get("/api/get-room-list", (req, res) => {
   db.query("SELECT room_id, room_name FROM map ORDER BY room_name ASC", (err, result) => {
     if (err) return res.json({ status: false });
@@ -100,7 +122,6 @@ app.get("/api/map/:id", (req, res) => {
   });
 });
 
-// API untuk Unity simpan riwayat
 app.post("/api/save-history", (req, res) => {
   const { user_id, mulai, tujuan, koordinat } = req.body;
   const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal) VALUES (?, ?, ?, ?)`;
