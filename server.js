@@ -127,16 +127,13 @@ app.get("/delete-map/:id", (req, res) => {
 });
 
 // --- ADMIN ---
+// --- ADMIN ---
 app.get("/admin", (req, res) => {
-  if (!req.session.loggedIn) return res.redirect("/login");
-  db.query("SELECT * FROM admin", (err, adminResult) => {
-    if (err) return res.status(500).send("Database Error");
-    res.render("admin", { title: "DATA ADMIN", admins: adminResult });
-  });
-});
-
-app.get("/logout", (req, res) => {
-  req.session.destroy(() => res.redirect("/login"));
+    if (!req.session.loggedIn) return res.redirect("/login");
+    db.query("SELECT * FROM admin", (err, adminResult) => {
+        if (err) return res.status(500).send("Database Error");
+        res.render("admin", { title: "DATA ADMIN", admins: adminResult });
+    });
 });
 
 // ==========================================
