@@ -79,10 +79,11 @@ app.get("/riwayat_perjalanan", (req, res) => {
   });
 });
 
+// FIX: Menambahkan kolom 'room' agar tidak error 500
 app.post("/tambah-riwayat_perjalanan", (req, res) => {
-  const { user_id, mulai, tujuan, koordinat_awal } = req.body;
-  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal) VALUES (?, ?, ?, ?)`;
-  db.query(sql, [user_id, mulai, tujuan, koordinat_awal], err => {
+  const { user_id, mulai, tujuan, koordinat_awal, room } = req.body;
+  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, room) VALUES (?, ?, ?, ?, ?)`;
+  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, room], err => {
     if (err) return res.status(500).send(err.message);
     res.redirect("/riwayat_perjalanan");
   });
@@ -153,10 +154,11 @@ app.get("/api/map/:id", (req, res) => {
   });
 });
 
+// FIX: Menambahkan kolom 'room' dan sinkronisasi 5 parameter
 app.post("/api/save-history", (req, res) => {
-  const { user_id, mulai, tujuan, koordinat } = req.body;
-  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal) VALUES (?, ?, ?, ?)`;
-  db.query(sql, [user_id, mulai, tujuan, koordinat], (err) => {
+  const { user_id, mulai, tujuan, koordinat, room } = req.body;
+  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, room) VALUES (?, ?, ?, ?, ?)`;
+  db.query(sql, [user_id, mulai, tujuan, koordinat, room], (err) => {
     if (err) return res.json({ status: false, error: err.message });
     res.json({ status: true, message: "History saved!" });
   });
