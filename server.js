@@ -9,6 +9,10 @@ require('dotenv').config();
 const app = express();
 const saltRounds = 10; 
 
+app.use(express.json());
+
+app.use(express.urlencoded({ extended: true }));
+
 // ===== Middleware =====
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -126,7 +130,6 @@ app.get("/delete-map/:id", (req, res) => {
   });
 });
 
-// --- ADMIN ---
 // --- ADMIN ---
 app.get("/admin", (req, res) => {
     if (!req.session.loggedIn) return res.redirect("/login");
