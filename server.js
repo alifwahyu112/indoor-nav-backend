@@ -136,6 +136,11 @@ app.get("/admin", (req, res) => {
     });
 });
 
+// --- LOGOUT ---
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => res.redirect("/login"));
+});
+
 // ==========================================
 // 2. API ENDPOINTS (YANG DICARI UNITY)
 // ==========================================
