@@ -52,6 +52,14 @@ app.get("/", (req, res) => {
   });
 });
 
+app.get("/delete-user/:id", (req, res) => {
+  if (!req.session.loggedIn) return res.redirect("/login");
+  db.query("DELETE FROM user WHERE id = ?", [req.params.id], err => {
+    if (err) return res.status(500).send(err.message);
+    res.redirect("/"); 
+  });
+});
+
 app.get("/login", (req, res) => res.render("login", { title: "Login Admin" }));
 
 app.post("/login", (req, res) => {
@@ -84,6 +92,14 @@ app.post("/tambah-riwayat_perjalanan", (req, res) => {
   const { user_id, mulai, tujuan, koordinat_awal, room } = req.body;
   const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, room) VALUES (?, ?, ?, ?, ?)`;
   db.query(sql, [user_id, mulai, tujuan, koordinat_awal, room], err => {
+    if (err) return res.status(500).send(err.message);
+    res.redirect("/riwayat_perjalanan");
+  });
+});
+
+app.get("/delete-riwayat_perjalanan/:id", (req, res) => {
+  if (!req.session.loggedIn) return res.redirect("/login");
+  db.query("DELETE FROM riwayat_perjalanan WHERE id = ?", [req.params.id], err => {
     if (err) return res.status(500).send(err.message);
     res.redirect("/riwayat_perjalanan");
   });
@@ -134,6 +150,14 @@ app.get("/admin", (req, res) => {
         if (err) return res.status(500).send("Database Error");
         res.render("admin", { title: "DATA ADMIN", admins: adminResult });
     });
+});
+
+app.get("/delete-admin/:id", (req, res) => {
+  if (!req.session.loggedIn) return res.redirect("/login");
+  db.query("DELETE FROM admin WHERE id = ?", [req.params.id], err => {
+    if (err) return res.status(500).send(err.message);
+    res.redirect("/admin");
+  });
 });
 
 // --- LOGOUT ---
