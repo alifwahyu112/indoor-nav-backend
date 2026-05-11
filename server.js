@@ -60,6 +60,24 @@ app.get("/delete-user/:id", (req, res) => {
   });
 });
 
+app.post("/tambah", async (req, res) => {
+  if (!req.session.loggedIn) return res.redirect("/login");
+  
+  const { username, password, gmail, mobile_number, BPJS_number } = req.body;
+  
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const sql = `INSERT INTO user (username, password, gmail, mobile_number, BPJS_number) VALUES (?, ?, ?, ?, ?)`;
+    db.query(sql, [username, hashedPassword, gmail, mobile_number, BPJS_number], err => {
+      if (err) return res.status(500).send("Gagal menambah user: " + err.message);
+      res.redirect("/"); // Kembali ke halaman utama setelah sukses
+    });
+  } catch (error) {
+    res.status(500).send("Error saat melakukan enkripsi password");
+  }
+});
+
 app.get("/login", (req, res) => res.render("login", { title: "Login Admin" }));
 
 app.post("/login", (req, res) => {
