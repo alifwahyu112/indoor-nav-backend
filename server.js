@@ -6,6 +6,8 @@ const cors = require('cors');
 const bcrypt = require('bcrypt'); 
 require('dotenv').config();
 
+const MySQLStore = require('express-mysql-session')(session);
+
 const app = express();
 const saltRounds = 10; 
 
@@ -71,7 +73,7 @@ app.post("/tambah", async (req, res) => {
     const sql = `INSERT INTO user (username, password, gmail, mobile_number, BPJS_number) VALUES (?, ?, ?, ?, ?)`;
     db.query(sql, [username, hashedPassword, gmail, mobile_number, BPJS_number], err => {
       if (err) return res.status(500).send("Gagal menambah user: " + err.message);
-      res.redirect("/"); // Kembali ke halaman utama setelah sukses
+      res.redirect("/"); 
     });
   } catch (error) {
     res.status(500).send("Error saat melakukan enkripsi password");
