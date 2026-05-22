@@ -98,6 +98,34 @@ app.post("/login", (req, res) => {
   });
 });
 
+// 1. Rute LOGIN (Bisa diakses publik)
+app.get("/login", (req, res) => res.render("login", { title: "Login Admin" }));
+
+app.post("/login", (req, res) => {
+    // ... logika login kamu ...
+});
+
+// 2. Rute FORGOT PASSWORD (Harus bisa diakses publik karena admin sedang lupa password)
+app.post("/forgot-password", (req, res) => {
+    const { email } = req.body;
+    db.query("SELECT * FROM admin WHERE email = ?", [email], (err, result) => {
+        if (err) return res.status(500).send("Database Error");
+        
+        if (result.length > 0) {
+            res.send("Link reset telah dikirim ke email Anda.");
+        } else {
+            res.send("Jika email terdaftar, link reset telah dikirim.");
+        }
+    });
+});
+
+// 3. Rute Dashboard (Wajib Login)
+// Pastikan rute setelah ini baru melakukan pengecekan req.session.loggedIn
+app.get("/", (req, res) => {
+    if (!req.session.loggedIn) return res.redirect("/login");
+    // ...
+});
+
 // --- RIWAYAT PERJALANAN ---
 app.get("/riwayat_perjalanan", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
