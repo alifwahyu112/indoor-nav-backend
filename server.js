@@ -23,7 +23,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || "secret-key",
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: process.env.NODE_ENV === 'production' } // Secure jika di Vercel
+  cookie: { secure: process.env.NODE_ENV === 'production' } 
 }));
 
 app.set("view engine", "ejs");
@@ -69,7 +69,6 @@ app.post("/tambah", async (req, res) => {
   
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    
     const sql = `INSERT INTO user (username, password, gmail, mobile_number, BPJS_number) VALUES (?, ?, ?, ?, ?)`;
     db.query(sql, [username, hashedPassword, gmail, mobile_number, BPJS_number], err => {
       if (err) return res.status(500).send("Gagal menambah user: " + err.message);
@@ -80,6 +79,7 @@ app.post("/tambah", async (req, res) => {
   }
 });
 
+// --- LOGIN & FORGOT PASSWORD ---
 app.get("/login", (req, res) => res.render("login", { title: "Login Admin" }));
 
 app.post("/login", (req, res) => {
@@ -98,32 +98,12 @@ app.post("/login", (req, res) => {
   });
 });
 
-// 1. Rute LOGIN (Bisa diakses publik)
-app.get("/login", (req, res) => res.render("login", { title: "Login Admin" }));
-
-app.post("/login", (req, res) => {
-    // ... logika login kamu ...
-});
-
-// 2. Rute FORGOT PASSWORD (Harus bisa diakses publik karena admin sedang lupa password)
 app.post("/forgot-password", (req, res) => {
     const { email } = req.body;
     db.query("SELECT * FROM admin WHERE email = ?", [email], (err, result) => {
         if (err) return res.status(500).send("Database Error");
-        
-        if (result.length > 0) {
-            res.send("Link reset telah dikirim ke email Anda.");
-        } else {
-            res.send("Jika email terdaftar, link reset telah dikirim.");
-        }
+        res.send("Jika email terdaftar, link reset telah dikirim.");
     });
-});
-
-// 3. Rute Dashboard (Wajib Login)
-// Pastikan rute setelah ini baru melakukan pengecekan req.session.loggedIn
-app.get("/", (req, res) => {
-    if (!req.session.loggedIn) return res.redirect("/login");
-    // ...
 });
 
 // --- RIWAYAT PERJALANAN ---
@@ -135,7 +115,6 @@ app.get("/riwayat_perjalanan", (req, res) => {
   });
 });
 
-// FIX: Menambahkan kolom 'room' agar tidak error 500
 app.post("/tambah-riwayat_perjalanan", (req, res) => {
   const { user_id, mulai, tujuan, koordinat_awal, room } = req.body;
   const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, room) VALUES (?, ?, ?, ?, ?)`;
@@ -153,7 +132,7 @@ app.get("/delete-riwayat_perjalanan/:id", (req, res) => {
   });
 });
 
-// --- MAP (DATA RUANGAN) ---
+// --- MAP ---
 app.get("/map", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
   db.query("SELECT * FROM map", (err, mapResult) => {
@@ -162,7 +141,6 @@ app.get("/map", (req, res) => {
   });
 });
 
-// FIX: Tambah Map
 app.post("/tambah-map", (req, res) => {
   const { Floor_ID, room_name, coordinates, room_id } = req.body;
   const sql = `INSERT INTO map (Floor_ID, room_name, coordinates, room_id) VALUES (?, ?, ?, ?)`;
@@ -172,7 +150,6 @@ app.post("/tambah-map", (req, res) => {
   });
 });
 
-// FIX UTAMA: Update Map (Mencegah Error Cannot POST /update-map)
 app.post("/update-map", (req, res) => {
   const { id_map, Floor_ID, room_name, coordinates, room_id } = req.body;
   const sql = `UPDATE map SET Floor_ID = ?, room_name = ?, coordinates = ?, room_id = ? WHERE id_map = ?`;
@@ -182,7 +159,6 @@ app.post("/update-map", (req, res) => {
   });
 });
 
-// FIX: Hapus Map
 app.get("/delete-map/:id", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
   db.query("DELETE FROM map WHERE id_map = ?", [req.params.id], err => {
@@ -210,10 +186,8 @@ app.get("/delete-admin/:id", (req, res) => {
 
 app.post("/tambah-admin", async (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  
   const { username, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
-  
   const sql = `INSERT INTO admin (username, password) VALUES (?, ?)`;
   db.query(sql, [username, hashedPassword], err => {
     if (err) return res.status(500).send("Gagal menambah admin: " + err.message);
@@ -221,7 +195,6 @@ app.post("/tambah-admin", async (req, res) => {
   });
 });
 
-// --- LOGOUT ---
 app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/login"));
 });
@@ -229,6 +202,33 @@ app.get("/logout", (req, res) => {
 // ==========================================
 // 2. API ENDPOINTS (YANG DICARI UNITY)
 // ==========================================
+
+app.post("/api/register", async (req, res) => {
+    const { username, gmail, password } = req.body;
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const sql = `INSERT INTO user (username, gmail, password) VALUES (?, ?, ?)`;
+        db.query(sql, [username, gmail, hashedPassword], (err) => {
+            if (err) return res.json({ status: false, message: "Gagal daftar" });
+            res.json({ status: true, message: "Akun berhasil dibuat" });
+        });
+    } catch (err) {
+        res.json({ status: false, message: "Error server" });
+    }
+});
+
+app.post("/api/login", (req, res) => {
+    const { email, password } = req.body;
+    db.query("SELECT * FROM user WHERE gmail = ?", [email], async (err, result) => {
+        if (err || result.length === 0) return res.json({ status: false, message: "User tidak ditemukan" });
+        const match = await bcrypt.compare(password, result[0].password);
+        if (match) {
+            res.json({ status: true, user_id: result[0].id });
+        } else {
+            res.json({ status: false, message: "Password salah" });
+        }
+    });
+});
 
 app.get("/api/get-room-list", (req, res) => {
   db.query("SELECT room_id, room_name FROM map ORDER BY room_name ASC", (err, result) => {
@@ -244,7 +244,6 @@ app.get("/api/map/:id", (req, res) => {
   });
 });
 
-// FIX: Menambahkan kolom 'room' dan sinkronisasi 5 parameter
 app.post("/api/save-history", (req, res) => {
   const { user_id, mulai, tujuan, koordinat, room } = req.body;
   const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, room) VALUES (?, ?, ?, ?, ?)`;
