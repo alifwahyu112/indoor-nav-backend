@@ -203,18 +203,25 @@ app.get("/logout", (req, res) => {
 // 2. API ENDPOINTS (YANG DICARI UNITY)
 // ==========================================
 
-app.post("/api/register", async (req, res) => {
-    const { username, gmail, password } = req.body;
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const sql = `INSERT INTO user (username, gmail, password) VALUES (?, ?, ?)`;
-        db.query(sql, [username, gmail, hashedPassword], (err) => {
-            if (err) return res.json({ status: false, message: "Gagal daftar" });
-            res.json({ status: true, message: "Akun berhasil dibuat" });
-        });
-    } catch (err) {
-        res.json({ status: false, message: "Error server" });
-    }
+app.post("/tambah", async (req, res) => {
+  if (!req.session.loggedIn) return res.redirect("/login");
+  const { username, password, gmail, mobile_number, BPJS_number } = req.body;
+  console.log("Data yang diterima server:", req.body);
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const sql = `INSERT INTO user (username, password, gmail, mobile_number, BPJS_number) VALUES (?, ?, ?, ?, ?)`;
+    
+    db.query(sql, [username, hashedPassword, gmail, mobile_number, BPJS_number], err => {
+      if (err) {
+        console.error("Error SQL:", err.message);
+        return res.status(500).send("Gagal menambah user: " + err.message);
+      }
+      res.redirect("/"); 
+    });
+  } catch (error) {
+    res.status(500).send("Error server: " + error.message);
+  }
 });
 
 app.post("/api/login", (req, res) => {

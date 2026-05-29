@@ -48,16 +48,18 @@
         </div>
       </header>
 
-      <form action="/tambah" method="POST" class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white p-6 rounded-lg shadow">
-        <input type="text" name="username" placeholder="Username" class="border p-2 rounded-md" required>
-        <input type="password" name="password" placeholder="Password" class="border p-2 rounded-md" required>
-        <input type="email" name="gmail" placeholder="Gmail" class="border p-2 rounded-md">
-        <input type="text" name="mobile_number" placeholder="Mobile Number" class="border p-2 rounded-md">
-        <input type="text" name="BPJS_number" placeholder="BPJS Number" class="border p-2 rounded-md">
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 col-span-2 md:col-span-1">
-          Tambah
-        </button>
-      </form>
+<form action="/tambah" method="POST" class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white p-6 rounded-lg shadow">
+    <input type="text" name="username" placeholder="Username" class="border p-2 rounded-md" required>
+    <input type="password" name="password" placeholder="Password" class="border p-2 rounded-md" required>
+    <input type="email" name="gmail" placeholder="Gmail" class="border p-2 rounded-md">
+    
+    <input type="text" name="mobile_number" placeholder="Mobile Number" class="border p-2 rounded-md">
+    <input type="text" name="BPJS_number" placeholder="BPJS Number" class="border p-2 rounded-md">
+    
+    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 col-span-2 md:col-span-1">
+        Tambah
+    </button>
+</form>
 
       <div class="mt-8 bg-white p-6 rounded-lg shadow mb-10">
         <h3 class="text-2xl font-semibold mb-4">Daftar User</h3>
@@ -96,13 +98,11 @@
   </div>
 
   <script>
-    // FUNGSI LIVE SEARCH
     function searchTable() {
       const input = document.getElementById("searchInput");
       const clearBtn = document.getElementById("clearSearch");
       const filter = input.value.toLowerCase();
       
-      // Munculkan tombol X jika ada teks
       if (input.value.length > 0) {
         clearBtn.classList.remove('hidden');
       } else {
@@ -129,12 +129,11 @@
       }
     }
 
-    // FUNGSI CLEAR INPUT
     function clearInput() {
       const input = document.getElementById("searchInput");
       input.value = "";
-      searchTable(); // Reset tabel
-      input.focus(); // Fokus kembali ke input
+      searchTable();
+      input.focus(); 
     }
   </script>
 </body>
