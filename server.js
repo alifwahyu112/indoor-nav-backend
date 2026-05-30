@@ -203,10 +203,9 @@ app.get("/logout", (req, res) => {
 // 2. API ENDPOINTS (YANG DICARI UNITY)
 // ==========================================
 
-app.post("/tambah", async (req, res) => {
-  if (!req.session.loggedIn) return res.redirect("/login");
-  const { username, password, gmail, mobile_number, BPJS_number } = req.body;
-  console.log("Data yang diterima server:", req.body);
+app.post("/api/register", async (req, res) => {
+  const { username, gmail, password, mobile_number, BPJS_number } = req.body;
+  console.log("Data API Register yang diterima:", req.body);
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -214,13 +213,14 @@ app.post("/tambah", async (req, res) => {
     
     db.query(sql, [username, hashedPassword, gmail, mobile_number, BPJS_number], err => {
       if (err) {
-        console.error("Error SQL:", err.message);
-        return res.status(500).send("Gagal menambah user: " + err.message);
+        console.error("Error SQL API:", err.message);
+        return res.json({ status: false, error: err.message });
       }
-      res.redirect("/"); 
+      // Kirim JSON asli ke Unity / Thunder Client, JANGAN pake res.redirect!
+      res.json({ status: true, message: "Akun Unity berhasil dibuat!" });
     });
   } catch (error) {
-    res.status(500).send("Error server: " + error.message);
+    res.json({ status: false, error: "Error server: " + error.message });
   }
 });
 
