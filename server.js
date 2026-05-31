@@ -42,12 +42,17 @@ const db = mysql.createPool({
   connectionLimit: 10
 });
 
-// Konfigurasi Transporter Nodemailer untuk Gmail SMTP
+// FIX REVISI: Mengubah konfigurasi ke SMTP Google Port 465 SSL agar stabil & lolos proteksi jaringan Vercel
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // Menggunakan koneksi SSL aman
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false // Mengabaikan kendala sertifikat SSL lokal saat berada di cloud environment
   }
 });
 
@@ -119,14 +124,12 @@ app.get("/forgot-password", (req, res) => {
 
 // Proses Pengecekan Username & Email Admin untuk Kirim Kode PIN 
 app.post("/forgot-password", (req, res) => {
-  // 1. Tangkap parameter username dan email dari form body
   const { username, email } = req.body;
 
-  // 2. Ubah query SQL agar memvalidasi dua kolom sekaligus (username & email)
+  // Memvalidasi kesesuaian dua parameter sekaligus (username & email) di tabel admin
   db.query("SELECT * FROM admin WHERE username = ? AND email = ?", [username, email], async (err, result) => {
     if (err) return res.status(500).render("forgot-password", { error: "Database Error" });
     
-    // Jika kombinasi salah atau tidak ditemukan
     if (result.length === 0) {
       return res.render("forgot-password", { error: "❌ Kombinasi Username dan Email Admin tidak cocok atau tidak terdaftar!" });
     }
@@ -134,7 +137,7 @@ app.post("/forgot-password", (req, res) => {
     // Generate PIN 6 Digit Acak
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Simpan data ke session server
+    // Simpan data kredensial verifikasi ke session server
     req.session.resetEmail = email;
     req.session.resetOTP = otpCode;
 
@@ -155,10 +158,10 @@ app.post("/forgot-password", (req, res) => {
       `
     };
 
-    // Kirim Email OTP
+    // Eksekusi Kirim Email OTP via Transporter Baru
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error("Error Nodemailer:", error);
+        console.error("Error Nodemailer Terdeteksi:", error);
         return res.render("forgot-password", { error: "❌ Gagal mengirim email. Periksa jaringan atau setup .env!" });
       }
       res.redirect("/verify-otp");
