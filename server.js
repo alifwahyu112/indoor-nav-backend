@@ -42,17 +42,17 @@ const db = mysql.createPool({
   connectionLimit: 10
 });
 
-// FIX REVISI: Mengubah konfigurasi ke SMTP Google Port 465 SSL agar stabil & lolos proteksi jaringan Vercel
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // Menggunakan koneksi SSL aman
+  port: 587,
+  secure: false, 
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
   tls: {
-    rejectUnauthorized: false // Mengabaikan kendala sertifikat SSL lokal saat berada di cloud environment
+    rejectUnauthorized: false,
+    ciphers: 'SSLv3' 
   }
 });
 
