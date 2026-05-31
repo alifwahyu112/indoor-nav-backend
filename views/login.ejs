@@ -36,14 +36,7 @@
     </form>
 
     <div class="text-center mt-4">
-      <a href="#" id="forgotLink" class="text-sm text-blue-500 hover:underline">Lupa Kata Sandi?</a>
-      
-      <form id="forgotForm" action="/forgot-password" method="POST" class="mt-4 hidden space-y-2">
-        <label class="block text-sm font-semibold text-gray-700">Masukkan Email Admin:</label>
-        <input type="email" name="email" required placeholder="admin@rs-ahmadayani.com"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
-        <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">Kirim Link Reset</button>
-      </form>
+      <a href="/forgot-password" id="forgotLink" class="text-sm text-blue-500 hover:underline">Lupa Kata Sandi?</a>
     </div>
 
     <div class="text-center text-xs text-gray-400 mt-8">© 2026 Indoor Navigation</div>
@@ -60,13 +53,6 @@
       passwordInput.setAttribute('type', type);
       eyeIcon.classList.toggle('fa-eye');
       eyeIcon.classList.toggle('fa-eye-slash');
-    });
-
-    // Toggle Form Forgot Password
-    document.getElementById('forgotLink').addEventListener('click', function(e) {
-      e.preventDefault();
-      this.classList.add('hidden');
-      document.getElementById('forgotForm').classList.remove('hidden');
     });
   </script>
 </body>
