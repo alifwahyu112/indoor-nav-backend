@@ -211,8 +211,7 @@
     function validasiTeksHapus() {
       const textInput = document.getElementById("inputKonfirmasiHapus").value;
       const btnHapus = document.getElementById("linkEksekusiHapus");
-      
-      // FIX: Mencocokkan inputan teks secara presisi (case-sensitive) dengan room_id target
+
       if (textInput.trim() === roomIdTargetPencocokan) {
         btnHapus.classList.remove("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
         btnHapus.classList.add("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md", "shadow-red-200");
