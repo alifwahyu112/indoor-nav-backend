@@ -158,11 +158,13 @@ app.post("/forgot-password", (req, res) => {
       `
     };
 
-    // Eksekusi Kirim Email OTP via Transporter Baru
+// Kirim Email OTP
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error("Error Nodemailer Terdeteksi:", error);
-        return res.render("forgot-password", { error: "❌ Gagal mengirim email. Periksa jaringan atau setup .env!" });
+        return res.render("forgot-password", { 
+          error: `❌ Detail Error Google: ${error.message}` 
+        });
       }
       res.redirect("/verify-otp");
     });
