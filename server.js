@@ -117,20 +117,24 @@ app.get("/forgot-password", (req, res) => {
   res.render("forgot-password", { error: null });
 });
 
-// Proses Pengecekan Email Admin & Kirim Kode PIN 
+// Proses Pengecekan Username & Email Admin untuk Kirim Kode PIN 
 app.post("/forgot-password", (req, res) => {
-  const { email } = req.body;
+  // 1. Tangkap parameter username dan email dari form body
+  const { username, email } = req.body;
 
-  db.query("SELECT * FROM admin WHERE email = ?", [email], async (err, result) => {
+  // 2. Ubah query SQL agar memvalidasi dua kolom sekaligus (username & email)
+  db.query("SELECT * FROM admin WHERE username = ? AND email = ?", [username, email], async (err, result) => {
     if (err) return res.status(500).render("forgot-password", { error: "Database Error" });
+    
+    // Jika kombinasi salah atau tidak ditemukan
     if (result.length === 0) {
-      return res.render("forgot-password", { error: "❌ Alamat email admin tidak terdaftar!" });
+      return res.render("forgot-password", { error: "❌ Kombinasi Username dan Email Admin tidak cocok atau tidak terdaftar!" });
     }
 
-    // Generate PIN 6 Digit Acak (String)
+    // Generate PIN 6 Digit Acak
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Simpan data email & PIN ke session server untuk divalidasi nanti
+    // Simpan data ke session server
     req.session.resetEmail = email;
     req.session.resetOTP = otpCode;
 
@@ -141,7 +145,7 @@ app.post("/forgot-password", (req, res) => {
       html: `
         <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; max-w: 500px;">
           <h2 style="color: #2563eb;">Verifikasi Reset Password</h2>
-          <p>Halo Administrator, Anda menerima email ini karena ada permintaan pemulihan kata sandi akun dashboard.</p>
+          <p>Halo <b>${username}</b>, Anda menerima email ini karena ada permintaan pemulihan kata sandi akun dashboard.</p>
           <p>Berikut adalah 6 digit PIN verifikasi Anda:</p>
           <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #1e293b; font-family: monospace;">
             ${otpCode}
@@ -151,13 +155,12 @@ app.post("/forgot-password", (req, res) => {
       `
     };
 
-    // Kirim Email OTP ke gmail admin
+    // Kirim Email OTP
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error("Error Nodemailer:", error);
         return res.render("forgot-password", { error: "❌ Gagal mengirim email. Periksa jaringan atau setup .env!" });
       }
-      // Jika sukses kirim, arahkan admin ke halaman pengisian PIN
       res.redirect("/verify-otp");
     });
   });
