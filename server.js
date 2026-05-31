@@ -4,6 +4,7 @@ const session = require("express-session");
 const path = require("path");
 const cors = require('cors');
 const bcrypt = require('bcrypt'); 
+const nodemailer = require("nodemailer"); // Import library Nodemailer
 require('dotenv').config();
 
 const MySQLStore = require('express-mysql-session')(session);
@@ -39,6 +40,15 @@ const db = mysql.createPool({
   ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
   waitForConnections: true,
   connectionLimit: 10
+});
+
+// Konfigurasi Transporter Nodemailer untuk Gmail SMTP
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
 });
 
 // ==========================================
@@ -79,7 +89,7 @@ app.post("/tambah", async (req, res) => {
   }
 });
 
-// --- LOGIN & FORGOT PASSWORD ---
+// --- LOGIN ADMIN ---
 app.get("/login", (req, res) => res.render("login", { title: "Login Admin" }));
 
 app.post("/login", (req, res) => {
@@ -98,12 +108,110 @@ app.post("/login", (req, res) => {
   });
 });
 
+// ===================================================
+// ALUR SEPARASI FITUR LUPA PASSWORD (EMAIL OTP)
+// ===================================================
+
+// Halaman 1: Minta PIN OTP (Tampilan Input Email)
+app.get("/forgot-password", (req, res) => {
+  res.render("forgot-password", { error: null });
+});
+
+// Proses Pengecekan Email Admin & Kirim Kode PIN 
 app.post("/forgot-password", (req, res) => {
-    const { email } = req.body;
-    db.query("SELECT * FROM admin WHERE email = ?", [email], (err, result) => {
-        if (err) return res.status(500).send("Database Error");
-        res.send("Jika email terdaftar, link reset telah dikirim.");
+  const { email } = req.body;
+
+  db.query("SELECT * FROM admin WHERE email = ?", [email], async (err, result) => {
+    if (err) return res.status(500).render("forgot-password", { error: "Database Error" });
+    if (result.length === 0) {
+      return res.render("forgot-password", { error: "❌ Alamat email admin tidak terdaftar!" });
+    }
+
+    // Generate PIN 6 Digit Acak (String)
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Simpan data email & PIN ke session server untuk divalidasi nanti
+    req.session.resetEmail = email;
+    req.session.resetOTP = otpCode;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Kode PIN Verifikasi Reset Password Admin",
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; max-w: 500px;">
+          <h2 style="color: #2563eb;">Verifikasi Reset Password</h2>
+          <p>Halo Administrator, Anda menerima email ini karena ada permintaan pemulihan kata sandi akun dashboard.</p>
+          <p>Berikut adalah 6 digit PIN verifikasi Anda:</p>
+          <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #1e293b; font-family: monospace;">
+            ${otpCode}
+          </div>
+          <p style="font-size: 12px; color: #64748b; margin-top: 20px;">*Jangan berikan kode PIN ini kepada siapapun. Jika Anda tidak merasa melakukan request ini, silakan abaikan email ini.</p>
+        </div>
+      `
+    };
+
+    // Kirim Email OTP ke gmail admin
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error Nodemailer:", error);
+        return res.render("forgot-password", { error: "❌ Gagal mengirim email. Periksa jaringan atau setup .env!" });
+      }
+      // Jika sukses kirim, arahkan admin ke halaman pengisian PIN
+      res.redirect("/verify-otp");
     });
+  });
+});
+
+// Halaman 2: Input Verifikasi PIN OTP
+app.get("/verify-otp", (req, res) => {
+  if (!req.session.resetEmail) return res.redirect("/forgot-password");
+  res.render("verify-otp", { error: null });
+});
+
+// Proses Validasi Angka PIN OTP
+app.post("/verify-otp", (req, res) => {
+  const { otp } = req.body;
+
+  // Mencocokkan isi input form dengan PIN OTP di session server
+  if (otp && otp.trim() === req.session.resetOTP) {
+    req.session.otpVerified = true; // Buka gerbang validasi
+    res.redirect("/reset-password");
+  } else {
+    res.render("verify-otp", { error: "❌ Kode PIN salah atau kadaluwarsa! Periksa kembali email Anda." });
+  }
+});
+
+// Halaman 3: Form Pembuatan Password Baru
+app.get("/reset-password", (req, res) => {
+  if (!req.session.otpVerified) return res.redirect("/forgot-password");
+  res.render("reset-password", { error: null });
+});
+
+// Proses Update Password Baru ke Database TiDB
+app.post("/reset-password", async (req, res) => {
+  if (!req.session.otpVerified) return res.redirect("/forgot-password");
+  const { password, confirmPassword } = req.body;
+
+  if (password !== confirmPassword) {
+    return res.render("reset-password", { error: "❌ Konfirmasi password tidak cocok!" });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const sql = "UPDATE admin SET password = ? WHERE email = ?";
+
+    db.query(sql, [hashedPassword, req.session.resetEmail], (err) => {
+      if (err) return res.status(500).render("reset-password", { error: "Gagal memperbarui database." });
+      
+      // Hancurkan session reset password setelah sukses agar aman
+      req.session.destroy(() => {
+        res.send("<script>alert('✅ Password admin berhasil diperbarui! Silakan login kembali.'); window.location.href='/login';</script>");
+      });
+    });
+  } catch (error) {
+    res.status(500).render("reset-password", { error: "Error enkripsi password." });
+  }
 });
 
 // --- RIWAYAT PERJALANAN ---
