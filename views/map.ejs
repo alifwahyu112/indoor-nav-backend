@@ -81,8 +81,7 @@
                     <td class="border px-4 py-2 font-semibold"><%= map.room_id %></td>
                     <td class="border px-4 py-2 text-center space-x-2">
                       <button onclick="openEditModal('<%= map.id_map %>', '<%= map.Floor_ID %>', '<%= map.room_name %>', '<%= map.coordinates %>', '<%= map.room_id %>')" class="bg-blue-100 text-blue-600 px-3 py-1 rounded-md hover:bg-blue-200 text-xs font-bold">Edit</button>
-                      <!-- FIX: Mengaktifkan modal konfirmasi hapus custom validasi angka ID Map -->
-                      <button type="button" onclick="bukaModalHapus('<%= map.id_map %>', '<%= map.room_name %>')" class="bg-red-100 text-red-600 px-3 py-1 rounded-md hover:bg-red-200 text-xs font-bold">Hapus</button>
+                      <button type="button" onclick="bukaModalHapus('<%= map.id_map %>', '<%= map.room_name %>', '<%= map.room_id %>')" class="bg-red-100 text-red-600 px-3 py-1 rounded-md hover:bg-red-200 text-xs font-bold">Hapus</button>
                     </td>
                   </tr>
                 <% }) %>
@@ -98,7 +97,6 @@
     </main>
   </div>
 
-  <!-- EDIT DATA MODAL MAP -->
   <div id="editModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden overflow-y-auto h-full w-full z-50 flex justify-center items-center">
     <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md mx-4 transform transition-all">
       <div class="flex justify-between items-center mb-6">
@@ -131,9 +129,6 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- MODAL KONFIRMASI HAPUS DENGAN VALIDASI ID MAP -->
-  <!-- ========================================== -->
   <div id="modalHapus" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-gray-900 bg-opacity-40 backdrop-blur-sm" onclick="tutupModalHapus()"></div>
     
@@ -154,22 +149,20 @@
         <span>Titik lokasi ruangan beserta koordinat penunjuk jalan AR ini akan hilang sepenuhnya dari sistem.</span>
       </div>
 
-      <!-- Input Validasi Ketik ID MAP -->
       <div class="mb-6">
         <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
-          Ketik ID Map <span id="idTargetLabel" class="text-red-600 font-black bg-red-50 px-1.5 py-0.5 rounded border border-red-200"></span> untuk mengonfirmasi:
+          Ketik Room ID <span id="roomTargetLabel" class="text-red-600 font-black bg-red-50 px-1.5 py-0.5 rounded border border-red-200 font-sans"></span> untuk mengonfirmasi:
         </label>
         <input 
           type="text" 
           id="inputKonfirmasiHapus" 
           onkeyup="validasiTeksHapus()"
-          placeholder="Masukkan ID Map" 
-          class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono font-semibold tracking-wide"
+          placeholder="Masukkan Room ID (e.g. MBPJS)" 
+          class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-semibold tracking-wide"
           autocomplete="off"
         >
       </div>
 
-      <!-- Tombol Aksi -->
       <div class="flex space-x-3 justify-end text-sm font-semibold">
         <button 
           type="button" 
@@ -191,11 +184,14 @@
 
   <script>
     let mapIdYangAkanDihapus = null;
+    let roomIdTargetPencocokan = ""; // Variabel penampung string room_id asli
 
-    function bukaModalHapus(id, roomName) {
-      mapIdYangAkanDihapus = id;
+    function bukaModalHapus(id_map, roomName, room_id) {
+      mapIdYangAkanDihapus = id_map;
+      roomIdTargetPencocokan = room_id; // Simpan nilai room_id ke variabel
+      
       document.getElementById("namaRuanganModal").innerText = roomName;
-      document.getElementById("idTargetLabel").innerText = id;
+      document.getElementById("roomTargetLabel").innerText = room_id; // Tampilkan di instruksi modal
       document.getElementById("modalHapus").classList.remove("hidden");
       document.getElementById("inputKonfirmasiHapus").focus();
     }
@@ -209,16 +205,18 @@
       btnHapus.classList.add("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
       btnHapus.href = "#";
       mapIdYangAkanDihapus = null;
+      roomIdTargetPencocokan = "";
     }
 
     function validasiTeksHapus() {
       const textInput = document.getElementById("inputKonfirmasiHapus").value;
       const btnHapus = document.getElementById("linkEksekusiHapus");
       
-      if (textInput.trim() === String(mapIdYangAkanDihapus)) {
+      // FIX: Mencocokkan inputan teks secara presisi (case-sensitive) dengan room_id target
+      if (textInput.trim() === roomIdTargetPencocokan) {
         btnHapus.classList.remove("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
         btnHapus.classList.add("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md", "shadow-red-200");
-        btnHapus.href = `/delete-map/${mapIdYangAkanDihapus}`;
+        btnHapus.href = `/delete-map/${mapIdYangAkanDihapus}`; // Tetap melempar id_map ke backend rute delete
       } else {
         btnHapus.classList.remove("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md", "shadow-red-200");
         btnHapus.classList.add("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
