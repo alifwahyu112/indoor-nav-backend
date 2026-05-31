@@ -186,13 +186,22 @@ app.get("/delete-admin/:id", (req, res) => {
 
 app.post("/tambah-admin", async (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  const { username, password } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const sql = `INSERT INTO admin (username, password) VALUES (?, ?)`;
-  db.query(sql, [username, hashedPassword], err => {
-    if (err) return res.status(500).send("Gagal menambah admin: " + err.message);
-    res.redirect("/admin");
-  });
+  const { username, email, password } = req.body; 
+  
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const sql = `INSERT INTO admin (username, email, password) VALUES (?, ?, ?)`;
+
+    db.query(sql, [username, email, hashedPassword], err => {
+      if (err) {
+        console.error("Error SQL Tambah Admin:", err.message);
+        return res.status(500).send("Gagal menambah admin: " + err.message);
+      }
+      res.redirect("/admin");
+    });
+  } catch (error) {
+    res.status(500).send("Error saat melakukan enkripsi password");
+  }
 });
 
 app.get("/logout", (req, res) => {
