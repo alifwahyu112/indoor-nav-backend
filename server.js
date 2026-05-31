@@ -216,7 +216,7 @@ app.post("/api/register", async (req, res) => {
         console.error("Error SQL API:", err.message);
         return res.json({ status: false, error: err.message });
       }
-      // Kirim JSON asli ke Unity / Thunder Client, JANGAN pake res.redirect!
+
       res.json({ status: true, message: "Akun Unity berhasil dibuat!" });
     });
   } catch (error) {
