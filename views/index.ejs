@@ -17,7 +17,6 @@
 
       <nav class="flex-1 p-4 space-y-2">
         <a href="/" class="block py-2 px-3 rounded-md bg-blue-100 text-blue-700 font-medium">👤 Data User</a>
-        
         <a href="/riwayat_perjalanan" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">📍 riwayat_perjalanan</a>
         <a href="/map" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">🗺️ Map</a>
         <a href="/admin" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">🔑 Admin</a>
@@ -48,18 +47,16 @@
         </div>
       </header>
 
-<form action="/tambah" method="POST" class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white p-6 rounded-lg shadow">
-    <input type="text" name="username" placeholder="Username" class="border p-2 rounded-md" required>
-    <input type="password" name="password" placeholder="Password" class="border p-2 rounded-md" required>
-    <input type="email" name="gmail" placeholder="Gmail" class="border p-2 rounded-md">
-    
-    <input type="text" name="mobile_number" placeholder="Mobile Number" class="border p-2 rounded-md">
-    <input type="text" name="BPJS_number" placeholder="BPJS Number" class="border p-2 rounded-md">
-    
-    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 col-span-2 md:col-span-1">
-        Tambah
-    </button>
-</form>
+      <form action="/tambah" method="POST" class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white p-6 rounded-lg shadow">
+        <input type="text" name="username" placeholder="Username" class="border p-2 rounded-md" required>
+        <input type="password" name="password" placeholder="Password" class="border p-2 rounded-md" required>
+        <input type="email" name="gmail" placeholder="Gmail" class="border p-2 rounded-md">
+        <input type="text" name="mobile_number" placeholder="Mobile Number" class="border p-2 rounded-md">
+        <input type="text" name="BPJS_number" placeholder="BPJS Number" class="border p-2 rounded-md">
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 col-span-2 md:col-span-1">
+            Tambah
+        </button>
+      </form>
 
       <div class="mt-8 bg-white p-6 rounded-lg shadow mb-10">
         <h3 class="text-2xl font-semibold mb-4">Daftar User</h3>
@@ -86,7 +83,7 @@
                   <td class="border px-4 py-2"><%= user.mobile_number %></td>
                   <td class="border px-4 py-2"><%= user.BPJS_number %></td>
                   <td class="border px-4 py-2 text-center">
-                    <a href="/delete-user/<%= user.id %>" class="text-red-500 hover:underline" onclick="return confirm('Yakin hapus user ini?');">Hapus</a>
+                    <button type="button" onclick="bukaModalHapus('<%= user.id %>', '<%= user.username %>')" class="text-red-500 hover:underline font-medium">Hapus</button>
                   </td>
                 </tr>
               <% }) %>
@@ -97,7 +94,95 @@
     </main>
   </div>
 
+  <div id="modalHapus" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm" onclick="tutupModalHapus()"></div>
+    
+    <div class="bg-slate-900 text-slate-100 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6 relative z-10 border border-slate-800">
+      <div class="flex items-center space-x-3 text-red-400 mb-4">
+        <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+        <h3 class="text-lg font-bold tracking-wide">Konfirmasi Penghapusan</h3>
+      </div>
+      
+      <p class="text-slate-400 text-sm mb-4 leading-relaxed">
+        Anda akan menghapus secara permanen repositori/user <span id="namaUserModal" class="font-bold text-white underline decoration-red-500"></span>. Tindakan ini <span class="text-red-400 font-semibold">tidak dapat dibatalkan</span>.
+      </p>
+      
+      <div class="bg-red-950/40 border border-red-900/50 text-red-300 p-3 rounded-lg text-xs mb-5 flex items-start space-x-2">
+        <span class="font-bold text-base leading-none">☠️</span>
+        <span>Semua data terkait, akses login, beserta riwayat dari user ini akan hilang selamanya dari server.</span>
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
+          Ketik <span class="text-red-400 font-bold">HAPUS</span> untuk mengonfirmasi:
+        </label>
+        <input 
+          type="text" 
+          id="inputKonfirmasiHapus" 
+          onkeyup="validasiTeksHapus()"
+          placeholder="HAPUS" 
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-semibold"
+          autocomplete="off"
+        >
+      </div>
+
+      <div class="flex space-x-3 justify-end text-sm font-semibold">
+        <button 
+          type="button" 
+          onclick="tutupModalHapus()" 
+          class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-all"
+        >
+          Batal
+        </button>
+        <a 
+          id="linkEksekusiHapus" 
+          href="#" 
+          class="px-4 py-2 bg-slate-800 text-slate-500 rounded-lg pointer-events-none cursor-not-allowed transition-all inline-flex items-center shadow-inner"
+        >
+          Hapus Selamanya
+        </a>
+      </div>
+    </div>
+  </div>
+
   <script>
+    let userIdYangAkanDihapus = null;
+
+    function bukaModalHapus(id, username) {
+      userIdYangAkanDihapus = id;
+      document.getElementById("namaUserModal").innerText = username;
+      document.getElementById("modalHapus").classList.remove("hidden");
+      document.getElementById("inputKonfirmasiHapus").focus();
+    }
+
+    function tutupModalHapus() {
+      document.getElementById("modalHapus").classList.add("hidden");
+      document.getElementById("inputKonfirmasiHapus").value = "";
+      
+      const btnHapus = document.getElementById("linkEksekusiHapus");
+      btnHapus.classList.remove("bg-red-600", "text-white", "hover:bg-red-700", "hover:shadow-red-500/20");
+      btnHapus.classList.add("bg-slate-800", "text-slate-500", "pointer-events-none", "cursor-not-allowed");
+      btnHapus.href = "#";
+      userIdYangAkanDihapus = null;
+    }
+
+    function validasiTeksHapus() {
+      const textInput = document.getElementById("inputKonfirmasiHapus").value;
+      const btnHapus = document.getElementById("linkEksekusiHapus");
+      
+      if (textInput === "HAPUS") {
+        btnHapus.classList.remove("bg-slate-800", "text-slate-500", "pointer-events-none", "cursor-not-allowed");
+        btnHapus.classList.add("bg-red-600", "text-white", "hover:bg-red-700", "shadow-lg", "shadow-red-900/30");
+        btnHapus.href = `/delete-user/${userIdYangAkanDihapus}`;
+      } else {
+        btnHapus.classList.remove("bg-red-600", "text-white", "hover:bg-red-700", "shadow-lg", "shadow-red-900/30");
+        btnHapus.classList.add("bg-slate-800", "text-slate-500", "pointer-events-none", "cursor-not-allowed");
+        btnHapus.href = "#";
+      }
+    }
+
     function searchTable() {
       const input = document.getElementById("searchInput");
       const clearBtn = document.getElementById("clearSearch");
