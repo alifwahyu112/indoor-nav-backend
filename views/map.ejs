@@ -36,9 +36,7 @@
           <span class="absolute inset-y-0 left-0 flex items-center pl-3">
             <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </span>
-          
           <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Cari data map..." class="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm">
-          
           <button id="clearSearch" onclick="clearInput()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 hidden">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -54,9 +52,7 @@
           <input type="text" name="room_name" placeholder="Nama Ruangan" class="border p-2 rounded-md" required>
           <input type="text" name="coordinates" placeholder="Koordinat (x,y,z)" class="border p-2 rounded-md" required>
           <input type="text" name="room_id" placeholder="Room ID (Unique)" class="border p-2 rounded-md" required>
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-bold transition">
-            Tambah
-          </button>
+          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-bold transition">Tambah</button>
         </form>
       </div>
 
@@ -84,16 +80,8 @@
                     <td class="border px-4 py-2 font-mono text-xs text-blue-600"><%= map.coordinates %></td>
                     <td class="border px-4 py-2 font-semibold"><%= map.room_id %></td>
                     <td class="border px-4 py-2 text-center space-x-2">
-                      <button 
-                        onclick="openEditModal('<%= map.id_map %>', '<%= map.Floor_ID %>', '<%= map.room_name %>', '<%= map.coordinates %>', '<%= map.room_id %>')"
-                        class="bg-blue-100 text-blue-600 px-3 py-1 rounded-md hover:bg-blue-200 text-xs font-bold">
-                        Edit
-                      </button>
-                      <a href="/delete-map/<%= map.id_map %>" 
-                         class="bg-red-100 text-red-600 px-3 py-1 rounded-md hover:bg-red-200 text-xs font-bold" 
-                         onclick="return confirm('Yakin ingin menghapus titik ini?');">
-                         Hapus
-                      </a>
+                      <button onclick="openEditModal('<%= map.id_map %>', '<%= map.Floor_ID %>', '<%= map.room_name %>', '<%= map.coordinates %>', '<%= map.room_id %>')" class="bg-blue-100 text-blue-600 px-3 py-1 rounded-md hover:bg-blue-200 text-xs font-bold">Edit</button>
+                      <button type="button" onclick="bukaModalHapus('/delete-map/<%= map.id_map %>')" class="bg-red-100 text-red-600 px-3 py-1 rounded-md hover:bg-red-200 text-xs font-bold">Hapus</button>
                     </td>
                   </tr>
                 <% }) %>
@@ -115,30 +103,24 @@
         <h3 class="text-2xl font-bold text-gray-800">Edit Data Map</h3>
         <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
       </div>
-      
       <form action="/update-map" method="POST" class="space-y-4">
         <input type="hidden" id="edit_id_map" name="id_map">
-
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">Floor ID</label>
           <input type="text" id="edit_Floor_ID" name="Floor_ID" class="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
         </div>
-
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">Room Name</label>
           <input type="text" id="edit_room_name" name="room_name" class="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
         </div>
-
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">Coordinates (x,y,z)</label>
           <input type="text" id="edit_coordinates" name="coordinates" class="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
         </div>
-
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">Room ID (Internal)</label>
           <input type="text" id="edit_room_id" name="room_id" class="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
         </div>
-
         <div class="flex justify-end space-x-3 pt-6">
           <button type="button" onclick="closeEditModal()" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 transition">Batal</button>
           <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-bold shadow-md transition">Update</button>
@@ -147,48 +129,61 @@
     </div>
   </div>
 
+  <div id="modalHapus" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-40 backdrop-blur-sm" onclick="tutupModalHapus()"></div>
+    <div class="bg-white text-gray-800 rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6 relative z-10 border border-gray-200">
+      <div class="flex items-center space-x-3 text-red-600 mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+        <h3 class="text-lg font-bold tracking-tight">Hapus Titik Map</h3>
+      </div>
+      <p class="text-gray-600 text-sm mb-6 leading-relaxed">
+        Apakah Anda yakin ingin menghapus titik koordinat ruangan ini secara permanen dari server?
+      </p>
+      <div class="flex space-x-3 justify-end text-sm font-semibold">
+        <button type="button" onclick="tutupModalHapus()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition border border-gray-200">Batal</button>
+        <a id="linkEksekusiHapus" href="#" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md shadow-red-200">Hapus Selamanya</a>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // --- FUNGSI SEARCH (LIVE SEARCH) ---
+    function bukaModalHapus(urlDelete) {
+      document.getElementById("linkEksekusiHapus").href = urlDelete;
+      document.getElementById("modalHapus").classList.remove("hidden");
+    }
+    function tutupModalHapus() {
+      document.getElementById("modalHapus").classList.add("hidden");
+      document.getElementById("linkEksekusiHapus").href = "#";
+    }
+
     function searchTable() {
       const input = document.getElementById("searchInput");
       const clearBtn = document.getElementById("clearSearch");
       const filter = input.value.toLowerCase();
-      
-      if (input.value.length > 0) {
-        clearBtn.classList.remove('hidden');
-      } else {
-        clearBtn.classList.add('hidden');
-      }
-
+      if (input.value.length > 0) { clearBtn.classList.remove('hidden'); } else { clearBtn.classList.add('hidden'); }
       const table = document.querySelector("table tbody");
       const tr = table.getElementsByTagName("tr");
-
       for (let i = 0; i < tr.length; i++) {
-        if (tr[i].cells.length < 2) continue; // Skip baris "Belum ada data"
+        if (tr[i].cells.length < 2) continue;
         let match = false;
         const td = tr[i].getElementsByTagName("td");
-
         for (let j = 0; j < td.length; j++) {
           if (td[j]) {
             const textValue = td[j].textContent || td[j].innerText;
-            if (textValue.toLowerCase().indexOf(filter) > -1) {
-              match = true;
-              break;
-            }
+            if (textValue.toLowerCase().indexOf(filter) > -1) { match = true; break; }
           }
         }
         tr[i].style.display = match ? "" : "none";
       }
     }
-
     function clearInput() {
       const input = document.getElementById("searchInput");
       input.value = "";
       searchTable();
       input.focus();
     }
-
-    // --- FUNGSI MODAL ---
     function openEditModal(id, floor, name, coords, rid) {
       document.getElementById('edit_id_map').value = id;
       document.getElementById('edit_Floor_ID').value = floor;
@@ -196,22 +191,16 @@
       document.getElementById('edit_coordinates').value = coords;
       document.getElementById('edit_room_id').value = rid;
       document.getElementById('editModal').classList.remove('hidden');
-      document.body.style.overflow = 'hidden'; // Cegah scroll saat modal buka
+      document.body.style.overflow = 'hidden';
     }
-
     function closeEditModal() {
       document.getElementById('editModal').classList.add('hidden');
-      document.body.style.overflow = 'auto'; // Aktifkan kembali scroll
+      document.body.style.overflow = 'auto';
     }
-
-    // Klik di luar modal untuk menutup
     window.onclick = function(event) {
       const modal = document.getElementById('editModal');
-      if (event.target == modal) {
-        closeEditModal();
-      }
+      if (event.target == modal) { closeEditModal(); }
     }
   </script>
-
 </body>
 </html>
