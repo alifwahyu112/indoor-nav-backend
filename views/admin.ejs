@@ -64,7 +64,7 @@
         </div>
       </form>
 
-      <div class="bg-white p-6 rounded-lg shadow">
+<div class="bg-white p-6 rounded-lg shadow">
         <h3 class="text-2xl font-semibold mb-4">Daftar Admin</h3>
         <div class="overflow-x-auto">
           <table class="w-full border-collapse border border-gray-200 text-sm">
@@ -72,6 +72,7 @@
               <tr class="bg-blue-50 text-left text-gray-700">
                 <th class="border px-4 py-2 w-10">ID</th>
                 <th class="border px-4 py-2">Username</th>
+                <th class="border px-4 py-2">Email</th>
                 <th class="border px-4 py-2">Password</th>
                 <th class="border px-4 py-2 text-center w-24">Aksi</th>
               </tr>
@@ -82,6 +83,7 @@
                     <tr class="hover:bg-gray-50 transition">
                       <td class="border px-4 py-2 text-center font-bold"><%= admin.id %></td>
                       <td class="border px-4 py-2 font-medium"><%= admin.username %></td>
+                      <td class="border px-4 py-2 text-gray-600"><%= admin.email || '-' %></td>
                       <td class="border px-4 py-2">******</td>
                       <td class="border px-4 py-2 text-center">
                         <button type="button" onclick="bukaModalHapus('<%= admin.id %>', '<%= admin.username %>')" class="text-red-500 hover:underline font-medium">Hapus</button>
@@ -90,7 +92,7 @@
                   <% }) %>
               <% } else { %>
                   <tr>
-                      <td colspan="4" class="text-center py-8 text-gray-500">
+                      <td colspan="5" class="text-center py-8 text-gray-500">
                         <p class="text-lg">📂 Belum ada data admin.</p>
                       </td>
                   </tr>
