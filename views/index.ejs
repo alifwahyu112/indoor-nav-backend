@@ -106,7 +106,7 @@
       </div>
       
       <p class="text-gray-600 text-sm mb-4 leading-relaxed">
-        Anda akan menghapus secara permanen repositori/user <span id="namaUserModal" class="font-bold text-gray-900 underline decoration-red-500 decoration-2"></span>. Tindakan ini <span class="text-red-600 font-semibold">tidak dapat dibatalkan</span>.
+        Anda akan menghapus secara permanen pengguna <span id="namaUserModal" class="font-bold text-gray-900 underline decoration-red-500 decoration-2"></span>. Tindakan ini <span class="text-red-600 font-semibold">tidak dapat dibatalkan</span>.
       </p>
       
       <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg text-xs mb-5 flex items-start space-x-2">
@@ -116,14 +116,14 @@
 
       <div class="mb-6">
         <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
-          Ketik <span class="text-red-600 font-black">HAPUS</span> untuk mengonfirmasi:
+          Ketik ID User <span id="idTargetLabel" class="text-red-600 font-black bg-red-50 px-1.5 py-0.5 rounded border border-red-200"></span> untuk mengonfirmasi:
         </label>
         <input 
           type="text" 
           id="inputKonfirmasiHapus" 
           onkeyup="validasiTeksHapus()"
-          placeholder="HAPUS" 
-          class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-semibold uppercase tracking-wide"
+          placeholder="Masukkan ID Pengguna" 
+          class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono font-semibold tracking-wide"
           autocomplete="off"
         >
       </div>
@@ -153,6 +153,8 @@
     function bukaModalHapus(id, username) {
       userIdYangAkanDihapus = id;
       document.getElementById("namaUserModal").innerText = username;
+      // Menampilkan teks panduan ID yang harus diketik user di label modal
+      document.getElementById("idTargetLabel").innerText = id;
       document.getElementById("modalHapus").classList.remove("hidden");
       document.getElementById("inputKonfirmasiHapus").focus();
     }
@@ -172,7 +174,8 @@
       const textInput = document.getElementById("inputKonfirmasiHapus").value;
       const btnHapus = document.getElementById("linkEksekusiHapus");
       
-      if (textInput === "HAPUS") {
+      // FIX: Mencocokkan ketikan dengan ID asli user (string comparison)
+      if (textInput.trim() === String(userIdYangAkanDihapus)) {
         btnHapus.classList.remove("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
         btnHapus.classList.add("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md", "shadow-red-200");
         btnHapus.href = `/delete-user/${userIdYangAkanDihapus}`;
