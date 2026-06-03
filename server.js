@@ -31,6 +31,7 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 // ===== Koneksi Database =====
+// ===== Koneksi Database =====
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -44,21 +45,16 @@ const db = mysql.createPool({
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 587,
-  secure: false, 
+  port: 465,
+  secure: true, 
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    pass: process.env.EMAIL_PASS  
   },
   tls: {
-    rejectUnauthorized: false,
-    ciphers: 'SSLv3' 
+    rejectUnauthorized: false 
   }
 });
-
-// ==========================================
-// 1. ROUTES WEB DASHBOARD (EJS)
-// ==========================================
 
 // --- HALAMAN UTAMA (Data User) ---
 app.get("/", (req, res) => {
