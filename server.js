@@ -4,7 +4,7 @@ const session = require("express-session");
 const path = require("path");
 const cors = require('cors');
 const bcrypt = require('bcrypt'); 
-const nodemailer = require("nodemailer"); // Import library Nodemailer
+const nodemailer = require("nodemailer"); 
 require('dotenv').config();
 
 const MySQLStore = require('express-mysql-session')(session);
@@ -12,12 +12,10 @@ const MySQLStore = require('express-mysql-session')(session);
 const app = express();
 const saltRounds = 10; 
 
-// ===== Middleware =====
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// PENTING: Agar session awet di Vercel
 app.set('trust proxy', 1); 
 
 app.use(session({
@@ -30,8 +28,6 @@ app.use(session({
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// ===== Koneksi Database =====
-// ===== Koneksi Database =====
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -56,7 +52,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// --- HALAMAN UTAMA (Data User) ---
 app.get("/", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
   db.query("SELECT * FROM user", (err, usersResult) => {
@@ -109,20 +104,15 @@ app.post("/login", (req, res) => {
   });
 });
 
-// ===================================================
-// ALUR SEPARASI FITUR LUPA PASSWORD (EMAIL OTP)
-// ===================================================
-
 // Halaman 1: Minta PIN OTP (Tampilan Input Email)
 app.get("/forgot-password", (req, res) => {
   res.render("forgot-password", { error: null });
 });
 
 // Proses Pengecekan Username & Email Admin untuk Kirim Kode PIN 
-app.post("/forgot-password", (req, res) => {
+app.post("/forgot-password", (req, res) => { // <-- FIXED TYPO (Ditambahkan 'app.')
   const { username, email } = req.body;
 
-  // Memvalidasi kesesuaian dua parameter sekaligus (username & email) di tabel admin
   db.query("SELECT * FROM admin WHERE username = ? AND email = ?", [username, email], async (err, result) => {
     if (err) return res.status(500).render("forgot-password", { error: "Database Error" });
     
@@ -130,10 +120,8 @@ app.post("/forgot-password", (req, res) => {
       return res.render("forgot-password", { error: "❌ Kombinasi Username dan Email Admin tidak cocok atau tidak terdaftar!" });
     }
 
-    // Generate PIN 6 Digit Acak
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Simpan data kredensial verifikasi ke session server
     req.session.resetEmail = email;
     req.session.resetOTP = otpCode;
 
@@ -154,7 +142,6 @@ app.post("/forgot-password", (req, res) => {
       `
     };
 
-// Kirim Email OTP
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error("Error Nodemailer Terdeteksi:", error);
@@ -177,9 +164,8 @@ app.get("/verify-otp", (req, res) => {
 app.post("/verify-otp", (req, res) => {
   const { otp } = req.body;
 
-  // Mencocokkan isi input form dengan PIN OTP di session server
   if (otp && otp.trim() === req.session.resetOTP) {
-    req.session.otpVerified = true; // Buka gerbang validasi
+    req.session.otpVerified = true; 
     res.redirect("/reset-password");
   } else {
     res.render("verify-otp", { error: "❌ Kode PIN salah atau kadaluwarsa! Periksa kembali email Anda." });
@@ -208,7 +194,6 @@ app.post("/reset-password", async (req, res) => {
     db.query(sql, [hashedPassword, req.session.resetEmail], (err) => {
       if (err) return res.status(500).render("reset-password", { error: "Gagal memperbarui database." });
       
-      // Hancurkan session reset password setelah sukses agar aman
       req.session.destroy(() => {
         res.send("<script>alert('✅ Password admin berhasil diperbarui! Silakan login kembali.'); window.location.href='/login';</script>");
       });
@@ -253,19 +238,21 @@ app.get("/map", (req, res) => {
   });
 });
 
+// 1. TAMBAH MAP (Termasuk kolom bim_image)
 app.post("/tambah-map", (req, res) => {
-  const { Floor_ID, room_name, coordinates, room_id } = req.body;
-  const sql = `INSERT INTO map (Floor_ID, room_name, coordinates, room_id) VALUES (?, ?, ?, ?)`;
-  db.query(sql, [Floor_ID, room_name, coordinates, room_id], err => {
+  const { Floor_ID, room_name, coordinates, room_id, bim_image } = req.body; // <-- TAMBAH VARIABEL
+  const sql = `INSERT INTO map (Floor_ID, room_name, coordinates, room_id, bim_image) VALUES (?, ?, ?, ?, ?)`; // <-- UPDATE QUERY
+  db.query(sql, [Floor_ID, room_name, coordinates, room_id, bim_image], err => { // <-- TAMBAH PARAMETER
     if (err) return res.status(500).send(err.message);
     res.redirect("/map");
   });
 });
 
+// 2. UPDATE MAP (Termasuk kolom bim_image)
 app.post("/update-map", (req, res) => {
-  const { id_map, Floor_ID, room_name, coordinates, room_id } = req.body;
-  const sql = `UPDATE map SET Floor_ID = ?, room_name = ?, coordinates = ?, room_id = ? WHERE id_map = ?`;
-  db.query(sql, [Floor_ID, room_name, coordinates, room_id, id_map], err => {
+  const { id_map, Floor_ID, room_name, coordinates, room_id, bim_image } = req.body; // <-- TAMBAH VARIABEL
+  const sql = `UPDATE map SET Floor_ID = ?, room_name = ?, coordinates = ?, room_id = ?, bim_image = ? WHERE id_map = ?`; // <-- UPDATE QUERY
+  db.query(sql, [Floor_ID, room_name, coordinates, room_id, bim_image, id_map], err => { // <-- TAMBAH PARAMETER
     if (err) return res.status(500).send("Gagal update: " + err.message);
     res.redirect("/map");
   });
@@ -365,6 +352,7 @@ app.get("/api/get-room-list", (req, res) => {
   });
 });
 
+// 3. API DETAIL MAP (Otomatis mengirim data bim_image ke Unity karena memakai SELECT *)
 app.get("/api/map/:id", (req, res) => {
   db.query("SELECT * FROM map WHERE room_id = ?", [req.params.id], (err, result) => {
     if (err || result.length === 0) return res.status(404).json({ status: false });
