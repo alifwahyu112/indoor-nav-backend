@@ -361,11 +361,17 @@ app.get("/api/map/:id", (req, res) => {
 });
 
 app.post("/api/save-history", (req, res) => {
-  const { user_id, mulai, tujuan, koordinat, room } = req.body;
-  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, room) VALUES (?, ?, ?, ?, ?)`;
-  db.query(sql, [user_id, mulai, tujuan, koordinat, room], (err) => {
-    if (err) return res.json({ status: false, error: err.message });
-    res.json({ status: true, message: "History saved!" });
+ 
+  const { user_id, mulai, tujuan, koordinat_awal } = req.body;
+  const tanggalSekarang = new Date();
+  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, tanggal) VALUES (?, ?, ?, ?, ?)`;
+  
+  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, tanggalSekarang], (err) => {
+    if (err) {
+      console.error("❌ SQL Error Simpan Riwayat:", err.message);
+      return res.json({ status: false, error: err.message });
+    }
+    res.json({ status: true, message: "History saved successfully gles!" });
   });
 });
 

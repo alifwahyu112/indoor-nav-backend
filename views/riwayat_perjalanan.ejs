@@ -68,17 +68,14 @@
                     <td class="border px-4 py-2 text-blue-600">#<%= row.user_id %></td>
                     
                     <td class="border px-4 py-2">
-                      <%= row.mulai %> 
+                      <span class="font-semibold text-gray-800"><%= row.mulai %></span> 
                       <% if (row.koordinat_awal) { %>
-                        <span class="text-xs text-gray-500 block font-mono">(<%= row.koordinat_awal %>)</span>
+                        <span class="text-xs text-gray-500 block font-mono mt-0.5">(<%= row.koordinat_awal %>)</span>
                       <% } %>
                     </td>
                     
                     <td class="border px-4 py-2">
-                      <%= row.tujuan %>
-                      <% if (row.koordinat_awal) { %>
-                        <span class="text-xs text-gray-500 block font-mono">(<%= row.koordinat_awal %>)</span>
-                      <% } %>
+                      <span class="font-semibold text-gray-800"><%= row.tujuan %></span>
                     </td>
 
                     <td class="border px-4 py-2">
