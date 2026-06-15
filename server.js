@@ -206,7 +206,7 @@ app.post("/reset-password", async (req, res) => {
 // --- RIWAYAT PERJALANAN ---
 app.get("/riwayat_perjalanan", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  db.query("SELECT * FROM riwayat_perjalanan ORDER BY id DESC", (err, result) => {
+  db.query("SELECT * FROM riwayat_perjalanan ORDER BY tanggal DESC", (err, result) => {
     if (err) return res.status(500).send(err.message);
     res.render("riwayat_perjalanan", { title: "DATA RIWAYAT", riwayat_perjalanans: result });
   });
