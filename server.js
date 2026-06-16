@@ -242,8 +242,6 @@ app.get("/map", (req, res) => {
 // --- VIEWER 3D XEOKIT ---
 app.get("/viewer", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  
-  // Menangkap parameter '?model=...' dari URL
   const modelUrl = req.query.model; 
   res.render("viewer3d", { title: "BIM 3D Viewer", modelUrl: modelUrl });
 });
