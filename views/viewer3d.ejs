@@ -34,7 +34,7 @@
     const xktLoader = new XKTLoaderPlugin(viewer);
 
     // Ambil Link Model dari parameter URL server Node.js lu
-    const urlModel = "<%= modelUrl %>";
+    const urlModel = "<%- modelUrl %>";
 
     if (urlModel && urlModel.trim() !== "") {
       const model = xktLoader.load({
