@@ -7,7 +7,7 @@
   <style>
     body { margin: 0; padding: 0; overflow: hidden; background-color: #e0e6ed; font-family: sans-serif; }
     #myCanvas { width: 100vw; height: 100vh; display: block; }
-    #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 20px; color: #3b82f6; }
+    #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 20px; color: #3b82f6; z-index: 10; }
   </style>
 </head>
 <body>
@@ -16,46 +16,56 @@
   <canvas id="myCanvas"></canvas>
 
   <script type="module">
-    // Menggunakan versi terbaru tanpa lock @2.3.6 agar mendukung format XKT v12
-    import { Viewer, XKTLoaderPlugin } from "https://esm.sh/@xeokit/xeokit-sdk/dist/xeokit-sdk.es.min.js";
+    // JURUS PAMUNGKAS: Tembak langsung ke source internal agar esm.sh me-resolve dependensi secara otomatis
+    import { Viewer } from "https://esm.sh/@xeokit/xeokit-sdk/src/viewer/Viewer.js";
+    import { XKTLoaderPlugin } from "https://esm.sh/@xeokit/xeokit-sdk/src/plugins/XKTLoaderPlugin/XKTLoaderPlugin.js";
 
-    // Inisialisasi Canvas
-    const viewer = new Viewer({
-      canvasId: "myCanvas",
-      transparent: true
-    });
-
-    // Panggil Plugin untuk membaca format .xkt
-    const xktLoader = new XKTLoaderPlugin(viewer);
-
-    // Ambil Link Model dari parameter URL server Node.js lu
-    const urlModel = "<%- modelUrl %>";
-
-    if (urlModel && urlModel.trim() !== "") {
-      const model = xktLoader.load({
-        id: "TOWER_MODEL",
-        src: urlModel,
-        edges: false // Dimatikan sesuai warning triangles yang terlalu padat tadi
+    try {
+      // Inisialisasi Canvas
+      const viewer = new Viewer({
+        canvasId: "myCanvas",
+        transparent: true
       });
 
-      model.on("loaded", () => {
-        document.getElementById("loading").style.display = "none";
+      // Panggil Plugin untuk membaca format .xkt
+      const xktLoader = new XKTLoaderPlugin(viewer);
+
+      // Ambil Link Model dari parameter URL server Node.js lu
+      const urlModel = "<%- modelUrl %>";
+
+      if (urlModel && urlModel.trim() !== "") {
+        console.log("Mencoba memuat model dari:", urlModel);
         
-        // Memaksa kamera langsung terbang dan nge-zoom pas ke tengah koordinat objek
-        viewer.cameraFlight.flyTo({
+        const model = xktLoader.load({
+          id: "TOWER_MODEL",
+          src: urlModel,
+          edges: false // Dimatikan karena triangles terlalu padat sesuai warning terminal tadi
+        });
+
+        model.on("loaded", () => {
+          console.log("Model 3D Berhasil Dimuat Sempurna!");
+          document.getElementById("loading").style.display = "none";
+          
+          // Paksa kamera terbang fokus ke tengah-tengah objek bangunan
+          viewer.cameraFlight.flyTo({
             aabb: model.aabb,
             duration: 0.5
+          });
         });
-      });
-      
-      model.on("error", (errMsg) => {
-        console.error("Error loading model:", errMsg);
-        document.getElementById("loading").innerText = "❌ Gagal memuat file BIM!";
+        
+        model.on("error", (errMsg) => {
+          console.error("Error loading model:", errMsg);
+          document.getElementById("loading").innerText = "❌ Gagal memuat file BIM!";
+          document.getElementById("loading").style.color = "red";
+        });
+        
+      } else {
+        document.getElementById("loading").innerText = "❌ File BIM tidak ditemukan atau Link kosong!";
         document.getElementById("loading").style.color = "red";
-      });
-      
-    } else {
-      document.getElementById("loading").innerText = "❌ File BIM tidak ditemukan atau Link kosong!";
+      }
+    } catch (err) {
+      console.error("Xeokit Initialization Error:", err);
+      document.getElementById("loading").innerText = "❌ Error Sistem Viewer 3D!";
       document.getElementById("loading").style.color = "red";
     }
   </script>
