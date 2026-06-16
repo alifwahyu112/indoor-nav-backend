@@ -5,52 +5,166 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
   <style>
-    body { margin: 0; padding: 0; overflow: hidden; background-color: #e0e6ed; font-family: sans-serif; }
+    body { margin: 0; padding: 0; overflow: hidden; background-color: #e0e6ed; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     #myCanvas { width: 100vw; height: 100vh; display: block; }
     #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 20px; color: #3b82f6; z-index: 10; }
+    
+    /* Panel Kontrol Lantai Melayang */
+    #controlPanel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      width: 280px;
+      z-index: 100;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    #controlPanel h3 { margin: 0 0 15px 0; font-size: 16px; color: #1e293b; font-weight: 700; text-align: center; border-b: 2px solid #3b82f6; padding-bottom: 5px; }
+    .control-group { margin-bottom: 15px; }
+    .control-group label { display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 5px; }
+    
+    /* Slider Styling */
+    .slider { width: 100%; -webkit-appearance: none; height: 6px; border-radius: 5px; background: #cbd5e1; outline: none; transition: background .3s; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #3b82f6; cursor: pointer; box-shadow: 0 0 5px rgba(0,0,0,0.2); }
+    
+    /* Button Styling */
+    .btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+    .btn-floor { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; color: #334155; transition: all 0.2s ease; }
+    .btn-floor:hover { background: #3b82f6; color: white; border-color: #3b82f6; }
+    .btn-all { grid-column: span 2; background: #3b82f6; color: white; border-color: #3b82f6; }
+    .btn-all:hover { background: #2563eb; }
   </style>
 </head>
 <body>
   
   <div id="loading">Memuat Model BIM 3D...</div>
+  
+  <div id="controlPanel">
+    <h3>🎮 KONTROL LANTAI TOWER</h3>
+    <div class="control-group">
+      <label id="sliderLabel">Potongan Tinggi: 100%</label>
+      <input type="range" id="heightSlider" class="slider" min="0" max="100" value="100" disabled>
+    </div>
+    <div class="btn-grid">
+      <button class="btn-floor btn-all" id="btnAll">🏢 Lihat Semua Lantai</button>
+      <button class="btn-floor" id="btnL3">Lantai 3</button>
+      <button class="btn-floor" id="btnL2">Lantai 2</button>
+      <button class="btn-floor" id="btnL1">Lantai 1</button>
+      <button class="btn-floor" id="btnGround">Lantai Dasar</button>
+    </div>
+  </div>
+
   <canvas id="myCanvas"></canvas>
 
   <script type="module">
-    // JURUS PAMUNGKAS: Tembak langsung ke source internal agar esm.sh me-resolve dependensi secara otomatis
     import { Viewer } from "https://esm.sh/@xeokit/xeokit-sdk/src/viewer/Viewer.js";
     import { XKTLoaderPlugin } from "https://esm.sh/@xeokit/xeokit-sdk/src/plugins/XKTLoaderPlugin/XKTLoaderPlugin.js";
+    // Ambil plugin potongan mekanik resmi dari Xeokit
+    import { SectionPlanesPlugin } from "https://esm.sh/@xeokit/xeokit-sdk/src/plugins/SectionPlanesPlugin/SectionPlanesPlugin.js";
 
     try {
-      // Inisialisasi Canvas
       const viewer = new Viewer({
         canvasId: "myCanvas",
         transparent: true
       });
 
-      // Panggil Plugin untuk membaca format .xkt
       const xktLoader = new XKTLoaderPlugin(viewer);
+      
+      // Aktifkan sistem pemotong objek 3D
+      const sectionPlanes = new SectionPlanesPlugin(viewer);
 
-      // Ambil Link Model dari parameter URL server Node.js lu
+      // Buat satu bidang potong horizontal menghadap ke bawah [0, -1, 0]
+      const floorClipper = sectionPlanes.createSectionPlane({
+        id: "horizontalClip",
+        dir: [0, -1, 0], 
+        loc: [0, 0, 0],  
+        active: false    // Defaultnya mati biar keliatan utuh pas awal masuk
+      });
+
       const urlModel = "<%- modelUrl %>";
 
       if (urlModel && urlModel.trim() !== "") {
-        console.log("Mencoba memuat model dari:", urlModel);
-        
         const model = xktLoader.load({
           id: "TOWER_MODEL",
           src: urlModel,
-          edges: false // Dimatikan karena triangles terlalu padat sesuai warning terminal tadi
+          edges: false 
         });
 
         model.on("loaded", () => {
-          console.log("Model 3D Berhasil Dimuat Sempurna!");
           document.getElementById("loading").style.display = "none";
           
-          // Paksa kamera terbang fokus ke tengah-tengah objek bangunan
           viewer.cameraFlight.flyTo({
             aabb: model.aabb,
             duration: 0.5
           });
+
+          // Mengambil batas tinggi (Y) bawah dan atas dari model tower lu secara akurat
+          const minY = model.aabb[1]; 
+          const maxY = model.aabb[4]; 
+          const totalHeight = maxY - minY;
+
+          // Konfigurasi Slider agar mengikuti ukuran asli tower lu
+          const slider = document.getElementById("heightSlider");
+          slider.min = minY;
+          slider.max = maxY;
+          slider.value = maxY;
+          slider.disabled = false;
+
+          const label = document.getElementById("sliderLabel");
+
+          // Fungsi geser slider potongan secara manual
+          slider.addEventListener("input", (e) => {
+            const currentVal = parseFloat(e.target.value);
+            floorClipper.active = true;
+            floorClipper.loc = [0, currentVal, 0];
+            
+            const persen = Math.round(((currentVal - minY) / totalHeight) * 100);
+            label.innerText = `Potongan Tinggi: ${persen}%`;
+          });
+
+          // Logika tombol preset instan lantai
+          document.getElementById("btnAll").onclick = () => {
+            floorClipper.active = false; // Matikan potongan (tampil semua)
+            slider.value = maxY;
+            label.innerText = "Potongan Tinggi: 100%";
+          };
+
+          document.getElementById("btnL3").onclick = () => {
+            floorClipper.active = true;
+            const targetY = minY + (totalHeight * 0.75); // Potong bagian atap, sisakan l3 kebawah
+            floorClipper.loc = [0, targetY, 0];
+            slider.value = targetY;
+            label.innerText = "Melihat: Lantai 3";
+          };
+
+          document.getElementById("btnL2").onclick = () => {
+            floorClipper.active = true;
+            const targetY = minY + (totalHeight * 0.50); // Potong setengah gedung
+            floorClipper.loc = [0, targetY, 0];
+            slider.value = targetY;
+            label.innerText = "Melihat: Lantai 2";
+          };
+
+          document.getElementById("btnL1").onclick = () => {
+            floorClipper.active = true;
+            const targetY = minY + (totalHeight * 0.25); // Potong sisa lantai bawah
+            floorClipper.loc = [0, targetY, 0];
+            slider.value = targetY;
+            label.innerText = "Melihat: Lantai 1";
+          };
+
+          document.getElementById("btnGround").onclick = () => {
+            floorClipper.active = true;
+            const targetY = minY + (totalHeight * 0.10); // Sisakan lantai paling dasar
+            floorClipper.loc = [0, targetY, 0];
+            slider.value = targetY;
+            label.innerText = "Melihat: Lantai Dasar";
+          };
+
         });
         
         model.on("error", (errMsg) => {
