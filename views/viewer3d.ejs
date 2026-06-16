@@ -16,7 +16,8 @@
   <canvas id="myCanvas"></canvas>
 
   <script type="module">
-    import { Viewer, XKTLoaderPlugin } from "https://esm.sh/@xeokit/xeokit-sdk";
+    // Menggunakan CDN esm.sh dengan path langsung ke file bundle untuk menghindari error module specifier
+    import { Viewer, XKTLoaderPlugin } from "https://esm.sh/@xeokit/xeokit-sdk@2.3.6/dist/xeokit-sdk.es.min.js";
 
     // Inisialisasi Canvas
     const viewer = new Viewer({
@@ -46,6 +47,13 @@
         document.getElementById("loading").style.display = "none";
         viewer.cameraFlight.flyTo(model); // Otomatis zoom ke tengah bangunan
       });
+      
+      model.on("error", (errMsg) => {
+        console.error("Error loading model:", errMsg);
+        document.getElementById("loading").innerText = "❌ Gagal memuat file BIM!";
+        document.getElementById("loading").style.color = "red";
+      });
+      
     } else {
       document.getElementById("loading").innerText = "❌ File BIM tidak ditemukan atau Link kosong!";
       document.getElementById("loading").style.color = "red";
