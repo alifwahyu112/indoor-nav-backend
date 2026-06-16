@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <style>
+    body { margin: 0; padding: 0; overflow: hidden; background-color: #e0e6ed; font-family: sans-serif; }
+    #myCanvas { width: 100vw; height: 100vh; display: block; }
+    #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 20px; color: #3b82f6; }
+  </style>
+</head>
+<body>
+  
+  <div id="loading">Memuat Model BIM 3D...</div>
+  <canvas id="myCanvas"></canvas>
+
+  <script type="module">
+    import { Viewer, XKTLoaderPlugin } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@2.3.6/dist/xeokit-sdk.es.min.js";
+
+    // Inisialisasi Canvas
+    const viewer = new Viewer({
+      canvasId: "myCanvas",
+      transparent: true
+    });
+
+    // Posisi Kamera Default (Bisa digeser pakai mouse nanti)
+    viewer.camera.eye = [-10, 15, -10];
+    viewer.camera.look = [0, 0, 0];
+    viewer.camera.up = [0, 1, 0];
+
+    // Panggil Plugin untuk membaca format .xkt
+    const xktLoader = new XKTLoaderPlugin(viewer);
+
+    // Ambil Link Model dari parameter URL server Node.js lu
+    const urlModel = "<%= modelUrl %>";
+
+    if (urlModel && urlModel.trim() !== "") {
+      const model = xktLoader.load({
+        id: "RSI_Yani",
+        src: urlModel,
+        edges: true // Bikin garis tepi bangunan keliatan tajam
+      });
+
+      model.on("loaded", () => {
+        document.getElementById("loading").style.display = "none";
+        viewer.cameraFlight.flyTo(model); // Otomatis zoom ke tengah bangunan
+      });
+    } else {
+      document.getElementById("loading").innerText = "❌ File BIM tidak ditemukan atau Link kosong!";
+      document.getElementById("loading").style.color = "red";
+    }
+  </script>
+</body>
+</html>

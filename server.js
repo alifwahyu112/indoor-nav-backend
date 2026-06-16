@@ -15,6 +15,7 @@ const saltRounds = 10;
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.set('trust proxy', 1); 
 
@@ -236,6 +237,15 @@ app.get("/map", (req, res) => {
     if (err) return res.status(500).send("Database Error");
     res.render("map", { title: "DATA MAP", maps: mapResult });
   });
+});
+
+// --- VIEWER 3D XEOKIT ---
+app.get("/viewer", (req, res) => {
+  if (!req.session.loggedIn) return res.redirect("/login");
+  
+  // Menangkap parameter '?model=...' dari URL
+  const modelUrl = req.query.model; 
+  res.render("viewer3d", { title: "BIM 3D Viewer", modelUrl: modelUrl });
 });
 
 // 1. TAMBAH MAP (Termasuk kolom bim_image)

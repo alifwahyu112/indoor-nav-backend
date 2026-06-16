@@ -81,7 +81,7 @@
                     
                     <td class="border px-4 py-2">
                       <% if (map.bim_image && map.bim_image.trim() !== "") { %>
-                        <a href="<%= map.bim_image %>" target="_blank" class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 text-xs font-semibold inline-block">👁️ Lihat BIM</a>
+                        <a href="/viewer?model=<%= map.bim_image %>" target="_blank" class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 text-xs font-semibold inline-block">👁️ Lihat BIM 3D</a>
                       <% } else { %>
                         <span class="text-gray-400 italic text-xs">Belum ada denah</span>
                       <% } %>
