@@ -16,8 +16,8 @@
   <canvas id="myCanvas"></canvas>
 
   <script type="module">
-    // Menggunakan CDN esm.sh dengan path langsung ke file bundle untuk menghindari error module specifier
-    import { Viewer, XKTLoaderPlugin } from "https://esm.sh/@xeokit/xeokit-sdk@2.3.6/dist/xeokit-sdk.es.min.js";
+    // Menggunakan versi terbaru tanpa lock @2.3.6 agar mendukung format XKT v12
+    import { Viewer, XKTLoaderPlugin } from "https://esm.sh/@xeokit/xeokit-sdk/dist/xeokit-sdk.es.min.js";
 
     // Inisialisasi Canvas
     const viewer = new Viewer({
@@ -25,27 +25,27 @@
       transparent: true
     });
 
-    // Posisi Kamera Default (Bisa digeser pakai mouse nanti)
-    viewer.camera.eye = [-10, 15, -10];
-    viewer.camera.look = [0, 0, 0];
-    viewer.camera.up = [0, 1, 0];
-
     // Panggil Plugin untuk membaca format .xkt
     const xktLoader = new XKTLoaderPlugin(viewer);
 
     // Ambil Link Model dari parameter URL server Node.js lu
-    const urlModel = "/models/model_rsi_yani.xkt";
+    const urlModel = "<%- modelUrl %>";
 
     if (urlModel && urlModel.trim() !== "") {
       const model = xktLoader.load({
-        id: "RSI_Yani",
+        id: "TOWER_MODEL",
         src: urlModel,
-        edges: true // Bikin garis tepi bangunan keliatan tajam
+        edges: false // Dimatikan sesuai warning triangles yang terlalu padat tadi
       });
 
       model.on("loaded", () => {
         document.getElementById("loading").style.display = "none";
-        viewer.cameraFlight.flyTo(model); // Otomatis zoom ke tengah bangunan
+        
+        // Memaksa kamera langsung terbang dan nge-zoom pas ke tengah koordinat objek
+        viewer.cameraFlight.flyTo({
+            aabb: model.aabb,
+            duration: 0.5
+        });
       });
       
       model.on("error", (errMsg) => {
