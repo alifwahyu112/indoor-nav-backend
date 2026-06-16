@@ -7,6 +7,7 @@ const bcrypt = require('bcrypt');
 const nodemailer = require("nodemailer"); 
 require('dotenv').config();
 
+// Panggil modul express-mysql-session
 const MySQLStore = require('express-mysql-session')(session);
 
 const app = express();
@@ -19,19 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.set('trust proxy', 1); 
 
-const sessionStore = new MySQLStore({}, db);
-
-app.use(session({
-  secret: process.env.SESSION_SECRET || "secret-key",
-  store: sessionStore, // <-- Tambahan wajib buat Vercel
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production' } 
-}));
-
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-
+// 1. PINDAHKAN KONEKSI DATABASE KE ATAS SINI
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -42,6 +31,21 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10
 });
+
+// 2. BUAT SESSION STORE MENGGUNAKAN DATABASE
+const sessionStore = new MySQLStore({}, db);
+
+// 3. MASUKKAN STORE KE DALAM PENGATURAN SESSION
+app.use(session({
+  secret: process.env.SESSION_SECRET || "secret-key",
+  store: sessionStore, // <-- BIAR LOGIN ADMIN AMAN DI VERCEL
+  resave: false,
+  saveUninitialized: false, // Diubah jadi false biar database gak penuh session kosong
+  cookie: { secure: process.env.NODE_ENV === 'production' } 
+}));
+
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -114,7 +118,7 @@ app.get("/forgot-password", (req, res) => {
 });
 
 // Proses Pengecekan Username & Email Admin untuk Kirim Kode PIN 
-app.post("/forgot-password", (req, res) => { // <-- FIXED TYPO (Ditambahkan 'app.')
+app.post("/forgot-password", (req, res) => {
   const { username, email } = req.body;
 
   db.query("SELECT * FROM admin WHERE username = ? AND email = ?", [username, email], async (err, result) => {
@@ -217,9 +221,11 @@ app.get("/riwayat_perjalanan", (req, res) => {
 });
 
 app.post("/tambah-riwayat_perjalanan", (req, res) => {
-  const { user_id, mulai, tujuan, koordinat_awal, room } = req.body;
-  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, room) VALUES (?, ?, ?, ?, ?)`;
-  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, room], err => {
+  const { user_id, mulai, tujuan, koordinat_awal } = req.body;
+  const tanggalSekarang = new Date();
+  
+  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, tanggal) VALUES (?, ?, ?, ?, ?)`;
+  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, tanggalSekarang], err => {
     if (err) return res.status(500).send(err.message);
     res.redirect("/riwayat_perjalanan");
   });
@@ -251,9 +257,9 @@ app.get("/viewer", (req, res) => {
 
 // 1. TAMBAH MAP (Termasuk kolom bim_image)
 app.post("/tambah-map", (req, res) => {
-  const { Floor_ID, room_name, coordinates, room_id, bim_image } = req.body; // <-- TAMBAH VARIABEL
-  const sql = `INSERT INTO map (Floor_ID, room_name, coordinates, room_id, bim_image) VALUES (?, ?, ?, ?, ?)`; // <-- UPDATE QUERY
-  db.query(sql, [Floor_ID, room_name, coordinates, room_id, bim_image], err => { // <-- TAMBAH PARAMETER
+  const { Floor_ID, room_name, coordinates, room_id, bim_image } = req.body; 
+  const sql = `INSERT INTO map (Floor_ID, room_name, coordinates, room_id, bim_image) VALUES (?, ?, ?, ?, ?)`; 
+  db.query(sql, [Floor_ID, room_name, coordinates, room_id, bim_image], err => { 
     if (err) return res.status(500).send(err.message);
     res.redirect("/map");
   });
@@ -261,9 +267,9 @@ app.post("/tambah-map", (req, res) => {
 
 // 2. UPDATE MAP (Termasuk kolom bim_image)
 app.post("/update-map", (req, res) => {
-  const { id_map, Floor_ID, room_name, coordinates, room_id, bim_image } = req.body; // <-- TAMBAH VARIABEL
-  const sql = `UPDATE map SET Floor_ID = ?, room_name = ?, coordinates = ?, room_id = ?, bim_image = ? WHERE id_map = ?`; // <-- UPDATE QUERY
-  db.query(sql, [Floor_ID, room_name, coordinates, room_id, bim_image, id_map], err => { // <-- TAMBAH PARAMETER
+  const { id_map, Floor_ID, room_name, coordinates, room_id, bim_image } = req.body; 
+  const sql = `UPDATE map SET Floor_ID = ?, room_name = ?, coordinates = ?, room_id = ?, bim_image = ? WHERE id_map = ?`; 
+  db.query(sql, [Floor_ID, room_name, coordinates, room_id, bim_image, id_map], err => { 
     if (err) return res.status(500).send("Gagal update: " + err.message);
     res.redirect("/map");
   });
@@ -372,7 +378,6 @@ app.get("/api/map/:id", (req, res) => {
 });
 
 app.post("/api/save-history", (req, res) => {
- 
   const { user_id, mulai, tujuan, koordinat_awal } = req.body;
   const tanggalSekarang = new Date();
   const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, tanggal) VALUES (?, ?, ?, ?, ?)`;
