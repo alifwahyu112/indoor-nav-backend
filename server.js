@@ -19,10 +19,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.set('trust proxy', 1); 
 
+const sessionStore = new MySQLStore({}, db);
+
 app.use(session({
   secret: process.env.SESSION_SECRET || "secret-key",
+  store: sessionStore, // <-- Tambahan wajib buat Vercel
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: { secure: process.env.NODE_ENV === 'production' } 
 }));
 
