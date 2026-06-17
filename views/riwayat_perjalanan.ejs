@@ -76,6 +76,9 @@
                     
                     <td class="border px-4 py-2">
                       <span class="font-semibold text-gray-800"><%= row.tujuan %></span>
+                      <% if (row.koordinat_tujuan) { %>
+                        <span class="text-xs text-gray-500 block font-mono mt-0.5">(<%= row.koordinat_tujuan %>)</span>
+                      <% } %>
                     </td>
 
                     <td class="border px-4 py-2">
