@@ -40,7 +40,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || "secret-key",
   store: sessionStore, // <-- BIAR LOGIN ADMIN AMAN DI VERCEL
   resave: false,
-  saveUninitialized: false, // Diubah jadi false biar database gak penuh session kosong
+  saveUninitialized: false, 
   cookie: { secure: process.env.NODE_ENV === 'production' } 
 }));
 
@@ -112,12 +112,10 @@ app.post("/login", (req, res) => {
   });
 });
 
-// Halaman 1: Minta PIN OTP (Tampilan Input Email)
 app.get("/forgot-password", (req, res) => {
   res.render("forgot-password", { error: null });
 });
 
-// Proses Pengecekan Username & Email Admin untuk Kirim Kode PIN 
 app.post("/forgot-password", (req, res) => {
   const { username, email } = req.body;
 
@@ -145,7 +143,6 @@ app.post("/forgot-password", (req, res) => {
           <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #1e293b; font-family: monospace;">
             ${otpCode}
           </div>
-          <p style="font-size: 12px; color: #64748b; margin-top: 20px;">*Jangan berikan kode PIN ini kepada siapapun. Jika Anda tidak merasa melakukan request ini, silakan abaikan email ini.</p>
         </div>
       `
     };
@@ -153,25 +150,20 @@ app.post("/forgot-password", (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error("Error Nodemailer Terdeteksi:", error);
-        return res.render("forgot-password", { 
-          error: `❌ Detail Error Google: ${error.message}` 
-        });
+        return res.render("forgot-password", { error: `❌ Detail Error Google: ${error.message}` });
       }
       res.redirect("/verify-otp");
     });
   });
 });
 
-// Halaman 2: Input Verifikasi PIN OTP
 app.get("/verify-otp", (req, res) => {
   if (!req.session.resetEmail) return res.redirect("/forgot-password");
   res.render("verify-otp", { error: null });
 });
 
-// Proses Validasi Angka PIN OTP
 app.post("/verify-otp", (req, res) => {
   const { otp } = req.body;
-
   if (otp && otp.trim() === req.session.resetOTP) {
     req.session.otpVerified = true; 
     res.redirect("/reset-password");
@@ -180,13 +172,11 @@ app.post("/verify-otp", (req, res) => {
   }
 });
 
-// Halaman 3: Form Pembuatan Password Baru
 app.get("/reset-password", (req, res) => {
   if (!req.session.otpVerified) return res.redirect("/forgot-password");
   res.render("reset-password", { error: null });
 });
 
-// Proses Update Password Baru ke Database TiDB
 app.post("/reset-password", async (req, res) => {
   if (!req.session.otpVerified) return res.redirect("/forgot-password");
   const { password, confirmPassword } = req.body;
@@ -221,17 +211,23 @@ app.get("/riwayat_perjalanan", (req, res) => {
 });
 
 app.post("/tambah-riwayat_perjalanan", (req, res) => {
-  const { user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan } = req.body;
+  const { user_id, mulai, tujuan, koordinat_awal } = req.body;
   
-  // 🔥 FIX JAM WIB: Server Vercel (UTC) ditambah 7 jam biar real-time Indonesia
   const waktuServer = new Date();
   waktuServer.setHours(waktuServer.getHours() + 7);
-  const tanggalSekarang = waktuServer;
-  
-  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggalSekarang, tujuan], err => {
-    if (err) return res.status(500).send(err.message);
-    res.redirect("/riwayat_perjalanan");
+
+  // 🔥 IDE CERDAS: Server nyari sendiri koordinatnya ke tabel map
+  db.query("SELECT coordinates FROM map WHERE room_name = ?", [tujuan], (errMap, resultsMap) => {
+    let koordinat_tujuan = "-";
+    if (!errMap && resultsMap.length > 0) {
+      koordinat_tujuan = resultsMap[0].coordinates;
+    }
+
+    const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    db.query(sql, [user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, waktuServer, tujuan], err => {
+      if (err) return res.status(500).send(err.message);
+      res.redirect("/riwayat_perjalanan");
+    });
   });
 });
 
@@ -252,14 +248,12 @@ app.get("/map", (req, res) => {
   });
 });
 
-// --- VIEWER 3D XEOKIT ---
 app.get("/viewer", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
   const modelUrl = req.query.model; 
   res.render("viewer3d", { title: "BIM 3D Viewer", modelUrl: modelUrl });
 });
 
-// 1. TAMBAH MAP (Termasuk kolom bim_image)
 app.post("/tambah-map", (req, res) => {
   const { Floor_ID, room_name, coordinates, room_id, bim_image } = req.body; 
   const sql = `INSERT INTO map (Floor_ID, room_name, coordinates, room_id, bim_image) VALUES (?, ?, ?, ?, ?)`; 
@@ -269,7 +263,6 @@ app.post("/tambah-map", (req, res) => {
   });
 });
 
-// 2. UPDATE MAP (Termasuk kolom bim_image)
 app.post("/update-map", (req, res) => {
   const { id_map, Floor_ID, room_name, coordinates, room_id, bim_image } = req.body; 
   const sql = `UPDATE map SET Floor_ID = ?, room_name = ?, coordinates = ?, room_id = ?, bim_image = ? WHERE id_map = ?`; 
@@ -334,18 +327,14 @@ app.get("/logout", (req, res) => {
 
 app.post("/api/register", async (req, res) => {
   const { username, gmail, password, mobile_number, BPJS_number } = req.body;
-  console.log("Data API Register yang diterima:", req.body);
-
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const sql = `INSERT INTO user (username, password, gmail, mobile_number, BPJS_number) VALUES (?, ?, ?, ?, ?)`;
     
     db.query(sql, [username, hashedPassword, gmail, mobile_number, BPJS_number], err => {
       if (err) {
-        console.error("Error SQL API:", err.message);
         return res.json({ status: false, error: err.message });
       }
-
       res.json({ status: true, message: "Akun Unity berhasil dibuat!" });
     });
   } catch (error) {
@@ -373,7 +362,6 @@ app.get("/api/get-room-list", (req, res) => {
   });
 });
 
-// 3. API DETAIL MAP (Otomatis mengirim data bim_image ke Unity karena memakai SELECT *)
 app.get("/api/map/:id", (req, res) => {
   db.query("SELECT * FROM map WHERE room_id = ?", [req.params.id], (err, result) => {
     if (err || result.length === 0) return res.status(404).json({ status: false });
@@ -382,21 +370,32 @@ app.get("/api/map/:id", (req, res) => {
 });
 
 app.post("/api/save-history", (req, res) => {
-  const { user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan } = req.body;
+  // Koordinat tujuan dari Unity udah nggak dipake lagi karena kita bakal nyomot dari DB
+  const { user_id, mulai, tujuan, koordinat_awal } = req.body;
   
-  // 🔥 FIX JAM WIB: Server Vercel (UTC) ditambah 7 jam biar real-time Indonesia
   const waktuServer = new Date();
   waktuServer.setHours(waktuServer.getHours() + 7);
-  const tanggalSekarang = waktuServer;
   
-  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-  
-  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggalSekarang, tujuan], (err) => {
-    if (err) {
-      console.error("❌ SQL Error Simpan Riwayat:", err.message);
-      return res.json({ status: false, error: err.message });
+  // 🔥 IDE CERDAS: Cari koordinat di tabel map berdasarkan nama ruangan (tujuan)
+  db.query("SELECT coordinates FROM map WHERE room_name = ?", [tujuan], (errMap, resultsMap) => {
+    
+    // Default kalau misal ruangannya nggak ketemu di tabel map
+    let koordinat_tujuan_asli = "-"; 
+    
+    // Kalau ketemu, ambil datanya!
+    if (!errMap && resultsMap.length > 0) {
+      koordinat_tujuan_asli = resultsMap[0].coordinates;
     }
-    res.json({ status: true, message: "History saved successfully gles!" });
+
+    const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    
+    db.query(sql, [user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan_asli, waktuServer, tujuan], (err) => {
+      if (err) {
+        console.error("❌ SQL Error Simpan Riwayat:", err.message);
+        return res.json({ status: false, error: err.message });
+      }
+      res.json({ status: true, message: "History saved successfully gles!" });
+    });
   });
 });
 
