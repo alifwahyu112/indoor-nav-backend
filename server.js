@@ -224,8 +224,9 @@ app.post("/tambah-riwayat_perjalanan", (req, res) => {
   const { user_id, mulai, tujuan, koordinat_awal } = req.body;
   const tanggalSekarang = new Date();
   
-  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, tanggal) VALUES (?, ?, ?, ?, ?)`;
-  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, tanggalSekarang], err => {
+  // 🔥 SUDAH DIPERBAIKI: Tambah kolom 'room'
+  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, tanggal, room) VALUES (?, ?, ?, ?, ?, ?)`;
+  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, tanggalSekarang, tujuan], err => {
     if (err) return res.status(500).send(err.message);
     res.redirect("/riwayat_perjalanan");
   });
@@ -380,9 +381,11 @@ app.get("/api/map/:id", (req, res) => {
 app.post("/api/save-history", (req, res) => {
   const { user_id, mulai, tujuan, koordinat_awal } = req.body;
   const tanggalSekarang = new Date();
-  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, tanggal) VALUES (?, ?, ?, ?, ?)`;
   
-  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, tanggalSekarang], (err) => {
+  // 🔥 SUDAH DIPERBAIKI: Tambah kolom 'room' biar TiDB gak ngamuk nolak data!
+  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, tanggal, room) VALUES (?, ?, ?, ?, ?, ?)`;
+  
+  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, tanggalSekarang, tujuan], (err) => {
     if (err) {
       console.error("❌ SQL Error Simpan Riwayat:", err.message);
       return res.json({ status: false, error: err.message });
