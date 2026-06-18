@@ -221,12 +221,15 @@ app.get("/riwayat_perjalanan", (req, res) => {
 });
 
 app.post("/tambah-riwayat_perjalanan", (req, res) => {
-  const { user_id, mulai, tujuan, koordinat_awal } = req.body;
-  const tanggalSekarang = new Date();
+  const { user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan } = req.body;
   
-  // 🔥 SUDAH DIPERBAIKI: Tambah kolom 'room'
-  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, tanggal, room) VALUES (?, ?, ?, ?, ?, ?)`;
-  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, tanggalSekarang, tujuan], err => {
+  // 🔥 FIX JAM WIB: Server Vercel (UTC) ditambah 7 jam biar real-time Indonesia
+  const waktuServer = new Date();
+  waktuServer.setHours(waktuServer.getHours() + 7);
+  const tanggalSekarang = waktuServer;
+  
+  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggalSekarang, tujuan], err => {
     if (err) return res.status(500).send(err.message);
     res.redirect("/riwayat_perjalanan");
   });
@@ -379,13 +382,16 @@ app.get("/api/map/:id", (req, res) => {
 });
 
 app.post("/api/save-history", (req, res) => {
-  const { user_id, mulai, tujuan, koordinat_awal } = req.body;
-  const tanggalSekarang = new Date();
+  const { user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan } = req.body;
   
-  // 🔥 SUDAH DIPERBAIKI: Tambah kolom 'room' biar TiDB gak ngamuk nolak data!
-  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, tanggal, room) VALUES (?, ?, ?, ?, ?, ?)`;
+  // 🔥 FIX JAM WIB: Server Vercel (UTC) ditambah 7 jam biar real-time Indonesia
+  const waktuServer = new Date();
+  waktuServer.setHours(waktuServer.getHours() + 7);
+  const tanggalSekarang = waktuServer;
   
-  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, tanggalSekarang, tujuan], (err) => {
+  const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  
+  db.query(sql, [user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggalSekarang, tujuan], (err) => {
     if (err) {
       console.error("❌ SQL Error Simpan Riwayat:", err.message);
       return res.json({ status: false, error: err.message });
