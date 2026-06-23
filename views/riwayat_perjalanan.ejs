@@ -67,8 +67,12 @@
                     <td class="border px-4 py-2 font-bold"><%= row.id %></td>
                     
                     <td class="border px-4 py-2 text-blue-600 font-bold capitalize">
-                      <%= row.username ? row.username : "User Tidak Dikenal" %>
-                    </td>
+  <% if (row.username) { %>
+    <%= row.username %>
+  <% } else { %>
+    <span class="text-red-500 text-xs italic">User Tidak Dikenal (ID: <%= row.user_id %>)</span>
+  <% } %>
+</td> 
                     
                     <td class="border px-4 py-2">
                       <% 
