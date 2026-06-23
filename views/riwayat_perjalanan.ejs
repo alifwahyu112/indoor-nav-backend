@@ -62,6 +62,10 @@
             </thead>
             <tbody>
               <% if (riwayat_perjalanans && riwayat_perjalanans.length > 0) { %>
+                <% 
+                  // Pola Regex tangguh untuk menarik paksa angka koordinat
+                  let regexKoor = /(.*?)[\(\[]?(-?\d+\.?\d*\s*,\s*-?\d+\.?\d*\s*,\s*-?\d+\.?\d*)[\)\]]?/; 
+                %>
                 <% riwayat_perjalanans.forEach((row) => { %>
                   <tr class="hover:bg-gray-50">
                     <td class="border px-4 py-2 font-bold"><%= row.id %></td>
@@ -69,46 +73,46 @@
                     
                     <td class="border px-4 py-2">
                       <% 
-                        let namaMulai = row.mulai ? row.mulai.toString() : "";
-                        let koorAwal = row.koordinat_awal ? row.koordinat_awal.toString() : "";
+                        let rawMulai = row.mulai ? row.mulai.toString() : "";
+                        let finalNamaMulai = rawMulai;
+                        let finalKoorAwal = row.koordinat_awal ? row.koordinat_awal.toString() : "";
                         
-                        // Jika Unity mengirim nama dan koordinat tergabung dalam 1 string di dalam row.mulai
-                        // Contoh: "Farmasi (-3659.8, 125, 4958.8)"
-                        if (namaMulai.includes("(") && namaMulai.includes(")")) {
-                          let splitData = namaMulai.split("(");
-                          namaMulai = splitData[0].trim();
-                          koorAwal = splitData[1].replace(")", "").trim();
+                        let matchMulai = rawMulai.match(regexKoor);
+                        if (matchMulai) {
+                          finalNamaMulai = matchMulai[1].trim();
+                          finalKoorAwal = matchMulai[2].trim();
                         }
                         
-                        // Bersihkan kurung bawaan jika ada
-                        koorAwal = koorAwal.replace("(", "").replace(")", "");
+                        // Pembersihan kurung sisa
+                        finalKoorAwal = finalKoorAwal.replace(/[()\[\]]/g, "");
                       %>
-                      <span class="font-semibold text-gray-800"><%= namaMulai %></span> 
+                      <span class="font-semibold text-gray-800"><%= finalNamaMulai %></span> 
                       
-                      <% if (koorAwal && koorAwal !== "-" && koorAwal !== "") { %>
+                      <% if (finalKoorAwal && finalKoorAwal !== "-" && finalKoorAwal !== "") { %>
                         <br>
-                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= koorAwal %>)</span>
+                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= finalKoorAwal %>)</span>
                       <% } %>
                     </td>
                     
                     <td class="border px-4 py-2">
                       <% 
-                        let namaTujuan = row.tujuan ? row.tujuan.toString() : "";
-                        let koorTujuan = row.koordinat_tujuan ? row.koordinat_tujuan.toString() : "";
+                        let rawTujuan = row.tujuan ? row.tujuan.toString() : "";
+                        let finalNamaTujuan = rawTujuan;
+                        let finalKoorTujuan = row.koordinat_tujuan ? row.koordinat_tujuan.toString() : "";
                         
-                        if (namaTujuan.includes("(") && namaTujuan.includes(")")) {
-                          let splitData = namaTujuan.split("(");
-                          namaTujuan = splitData[0].trim();
-                          koorTujuan = splitData[1].replace(")", "").trim();
+                        let matchTujuan = rawTujuan.match(regexKoor);
+                        if (matchTujuan) {
+                          finalNamaTujuan = matchTujuan[1].trim();
+                          finalKoorTujuan = matchTujuan[2].trim();
                         }
                         
-                        koorTujuan = koorTujuan.replace("(", "").replace(")", "");
+                        finalKoorTujuan = finalKoorTujuan.replace(/[()\[\]]/g, "");
                       %>
-                      <span class="font-semibold text-gray-800"><%= namaTujuan %></span>
+                      <span class="font-semibold text-gray-800"><%= finalNamaTujuan %></span>
                       
-                      <% if (koorTujuan && koorTujuan !== "-" && koorTujuan !== "") { %>
+                      <% if (finalKoorTujuan && finalKoorTujuan !== "-" && finalKoorTujuan !== "") { %>
                         <br>
-                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= koorTujuan %>)</span>
+                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= finalKoorTujuan %>)</span>
                       <% } %>
                     </td>
 
