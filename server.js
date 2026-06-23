@@ -201,19 +201,11 @@ app.post("/reset-password", async (req, res) => {
   }
 });
 
-// --- RIWAYAT PERJALANAN ---
+// --- RIWAYAT PERJALANAN (KEMBALI KE VERSI SIMPEL) ---
 app.get("/riwayat_perjalanan", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
   
-  // 🔥 PERBAIKAN: Gunakan JOIN untuk mengambil username dari tabel user
-  const sqlQuery = `
-    SELECT r.*, u.username 
-    FROM riwayat_perjalanan r 
-    LEFT JOIN user u ON r.user_id = u.id 
-    ORDER BY r.tanggal DESC
-  `;
-  
-  db.query(sqlQuery, (err, result) => {
+  db.query("SELECT * FROM riwayat_perjalanan ORDER BY tanggal DESC", (err, result) => {
     if (err) return res.status(500).send(err.message);
     res.render("riwayat_perjalanan", { title: "DATA RIWAYAT", riwayat_perjalanans: result });
   });
