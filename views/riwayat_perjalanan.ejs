@@ -62,10 +62,6 @@
             </thead>
             <tbody>
               <% if (riwayat_perjalanans && riwayat_perjalanans.length > 0) { %>
-                <% 
-                  // Pola Regex tangguh untuk menarik paksa angka koordinat
-                  let regexKoor = /(.*?)[\(\[]?(-?\d+\.?\d*\s*,\s*-?\d+\.?\d*\s*,\s*-?\d+\.?\d*)[\)\]]?/; 
-                %>
                 <% riwayat_perjalanans.forEach((row) => { %>
                   <tr class="hover:bg-gray-50">
                     <td class="border px-4 py-2 font-bold"><%= row.id %></td>
@@ -73,46 +69,49 @@
                     
                     <td class="border px-4 py-2">
                       <% 
-                        let rawMulai = row.mulai ? row.mulai.toString() : "";
-                        let finalNamaMulai = rawMulai;
-                        let finalKoorAwal = row.koordinat_awal ? row.koordinat_awal.toString() : "";
+                        let textMulai = row.mulai ? row.mulai.toString() : "";
+                        let txtKoorAwal = row.koordinat_awal ? row.koordinat_awal.toString() : "";
                         
-                        let matchMulai = rawMulai.match(regexKoor);
-                        if (matchMulai) {
-                          finalNamaMulai = matchMulai[1].trim();
-                          finalKoorAwal = matchMulai[2].trim();
+                        // Potong paksa kalau ada tanda kurung
+                        if (textMulai.indexOf("(") !== -1) {
+                          let splitIndex = textMulai.indexOf("(");
+                          txtKoorAwal = textMulai.substring(splitIndex); 
+                          textMulai = textMulai.substring(0, splitIndex).trim(); 
                         }
                         
-                        // Pembersihan kurung sisa
-                        finalKoorAwal = finalKoorAwal.replace(/[()\[\]]/g, "");
+                        // Bersihkan kurung biar rapi
+                        if (txtKoorAwal) {
+                           txtKoorAwal = txtKoorAwal.replace("(", "").replace(")", "").trim();
+                        }
                       %>
-                      <span class="font-semibold text-gray-800"><%= finalNamaMulai %></span> 
-                      
-                      <% if (finalKoorAwal && finalKoorAwal !== "-" && finalKoorAwal !== "") { %>
+                      <span class="font-semibold text-gray-800"><%= textMulai %></span> 
+                      <% if (txtKoorAwal && txtKoorAwal !== "-") { %>
                         <br>
-                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= finalKoorAwal %>)</span>
+                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= txtKoorAwal %>)</span>
                       <% } %>
                     </td>
                     
                     <td class="border px-4 py-2">
                       <% 
-                        let rawTujuan = row.tujuan ? row.tujuan.toString() : "";
-                        let finalNamaTujuan = rawTujuan;
-                        let finalKoorTujuan = row.koordinat_tujuan ? row.koordinat_tujuan.toString() : "";
+                        let textTujuan = row.tujuan ? row.tujuan.toString() : "";
+                        let txtKoorTujuan = row.koordinat_tujuan ? row.koordinat_tujuan.toString() : "";
                         
-                        let matchTujuan = rawTujuan.match(regexKoor);
-                        if (matchTujuan) {
-                          finalNamaTujuan = matchTujuan[1].trim();
-                          finalKoorTujuan = matchTujuan[2].trim();
+                        // Potong paksa kalau ada tanda kurung
+                        if (textTujuan.indexOf("(") !== -1) {
+                          let splitIdx = textTujuan.indexOf("(");
+                          txtKoorTujuan = textTujuan.substring(splitIdx);
+                          textTujuan = textTujuan.substring(0, splitIdx).trim();
                         }
                         
-                        finalKoorTujuan = finalKoorTujuan.replace(/[()\[\]]/g, "");
+                        // Bersihkan kurung biar rapi
+                        if (txtKoorTujuan) {
+                           txtKoorTujuan = txtKoorTujuan.replace("(", "").replace(")", "").trim();
+                        }
                       %>
-                      <span class="font-semibold text-gray-800"><%= finalNamaTujuan %></span>
-                      
-                      <% if (finalKoorTujuan && finalKoorTujuan !== "-" && finalKoorTujuan !== "") { %>
+                      <span class="font-semibold text-gray-800"><%= textTujuan %></span>
+                      <% if (txtKoorTujuan && txtKoorTujuan !== "-") { %>
                         <br>
-                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= finalKoorTujuan %>)</span>
+                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= txtKoorTujuan %>)</span>
                       <% } %>
                     </td>
 
