@@ -53,7 +53,7 @@
             <thead>
               <tr class="bg-blue-50 text-left">
                 <th class="border px-4 py-2">ID</th>
-                <th class="border px-4 py-2">User ID</th>
+                <th class="border px-4 py-2">Nama Pengguna</th>
                 <th class="border px-4 py-2">Mulai (Scan QR)</th>
                 <th class="border px-4 py-2">Tujuan</th>
                 <th class="border px-4 py-2">Tanggal</th>
@@ -65,21 +65,22 @@
                 <% riwayat_perjalanans.forEach((row) => { %>
                   <tr class="hover:bg-gray-50">
                     <td class="border px-4 py-2 font-bold"><%= row.id %></td>
-                    <td class="border px-4 py-2 text-blue-600">#<%= row.user_id %></td>
+                    
+                    <td class="border px-4 py-2 text-blue-600 font-bold capitalize">
+                      <%= row.username ? row.username : "User Tidak Dikenal" %>
+                    </td>
                     
                     <td class="border px-4 py-2">
                       <% 
                         let textMulai = row.mulai ? row.mulai.toString() : "";
                         let txtKoorAwal = row.koordinat_awal ? row.koordinat_awal.toString() : "";
                         
-                        // Potong paksa kalau ada tanda kurung
                         if (textMulai.indexOf("(") !== -1) {
                           let splitIndex = textMulai.indexOf("(");
                           txtKoorAwal = textMulai.substring(splitIndex); 
                           textMulai = textMulai.substring(0, splitIndex).trim(); 
                         }
                         
-                        // Bersihkan kurung biar rapi
                         if (txtKoorAwal) {
                            txtKoorAwal = txtKoorAwal.replace("(", "").replace(")", "").trim();
                         }
@@ -96,14 +97,12 @@
                         let textTujuan = row.tujuan ? row.tujuan.toString() : "";
                         let txtKoorTujuan = row.koordinat_tujuan ? row.koordinat_tujuan.toString() : "";
                         
-                        // Potong paksa kalau ada tanda kurung
                         if (textTujuan.indexOf("(") !== -1) {
                           let splitIdx = textTujuan.indexOf("(");
                           txtKoorTujuan = textTujuan.substring(splitIdx);
                           textTujuan = textTujuan.substring(0, splitIdx).trim();
                         }
                         
-                        // Bersihkan kurung biar rapi
                         if (txtKoorTujuan) {
                            txtKoorTujuan = txtKoorTujuan.replace("(", "").replace(")", "").trim();
                         }

@@ -204,7 +204,16 @@ app.post("/reset-password", async (req, res) => {
 // --- RIWAYAT PERJALANAN ---
 app.get("/riwayat_perjalanan", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  db.query("SELECT * FROM riwayat_perjalanan ORDER BY tanggal DESC", (err, result) => {
+  
+  // 🔥 PERBAIKAN: Gunakan JOIN untuk mengambil username dari tabel user
+  const sqlQuery = `
+    SELECT r.*, u.username 
+    FROM riwayat_perjalanan r 
+    LEFT JOIN user u ON r.user_id = u.id 
+    ORDER BY r.tanggal DESC
+  `;
+  
+  db.query(sqlQuery, (err, result) => {
     if (err) return res.status(500).send(err.message);
     res.render("riwayat_perjalanan", { title: "DATA RIWAYAT", riwayat_perjalanans: result });
   });
@@ -216,7 +225,6 @@ app.post("/tambah-riwayat_perjalanan", (req, res) => {
   const waktuServer = new Date();
   waktuServer.setHours(waktuServer.getHours() + 7);
 
-  // 🔥 IDE CERDAS: Server nyari sendiri koordinatnya ke tabel map
   db.query("SELECT coordinates FROM map WHERE room_name = ?", [tujuan], (errMap, resultsMap) => {
     let koordinat_tujuan = "-";
     if (!errMap && resultsMap.length > 0) {
@@ -370,19 +378,15 @@ app.get("/api/map/:id", (req, res) => {
 });
 
 app.post("/api/save-history", (req, res) => {
-  // Koordinat tujuan dari Unity udah nggak dipake lagi karena kita bakal nyomot dari DB
   const { user_id, mulai, tujuan, koordinat_awal } = req.body;
   
   const waktuServer = new Date();
   waktuServer.setHours(waktuServer.getHours() + 7);
   
-  // 🔥 IDE CERDAS: Cari koordinat di tabel map berdasarkan nama ruangan (tujuan)
   db.query("SELECT coordinates FROM map WHERE room_name = ?", [tujuan], (errMap, resultsMap) => {
     
-    // Default kalau misal ruangannya nggak ketemu di tabel map
     let koordinat_tujuan_asli = "-"; 
     
-    // Kalau ketemu, ambil datanya!
     if (!errMap && resultsMap.length > 0) {
       koordinat_tujuan_asli = resultsMap[0].coordinates;
     }
