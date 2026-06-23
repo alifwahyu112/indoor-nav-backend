@@ -54,7 +54,7 @@
               <tr class="bg-blue-50 text-left">
                 <th class="border px-4 py-2">ID</th>
                 <th class="border px-4 py-2">User ID</th>
-                <th class="border px-4 py-2">Mulai</th>
+                <th class="border px-4 py-2">Mulai (Scan QR)</th>
                 <th class="border px-4 py-2">Tujuan</th>
                 <th class="border px-4 py-2">Tanggal</th>
                 <th class="border px-4 py-2 text-center">Aksi</th>
@@ -68,16 +68,47 @@
                     <td class="border px-4 py-2 text-blue-600">#<%= row.user_id %></td>
                     
                     <td class="border px-4 py-2">
-                      <span class="font-semibold text-gray-800"><%= row.mulai %></span> 
-                      <% if (row.koordinat_awal) { %>
-                        <span class="text-xs text-gray-500 block font-mono mt-0.5">(<%= row.koordinat_awal %>)</span>
+                      <% 
+                        let namaMulai = row.mulai ? row.mulai.toString() : "";
+                        let koorAwal = row.koordinat_awal ? row.koordinat_awal.toString() : "";
+                        
+                        // Jika Unity mengirim nama dan koordinat tergabung dalam 1 string di dalam row.mulai
+                        // Contoh: "Farmasi (-3659.8, 125, 4958.8)"
+                        if (namaMulai.includes("(") && namaMulai.includes(")")) {
+                          let splitData = namaMulai.split("(");
+                          namaMulai = splitData[0].trim();
+                          koorAwal = splitData[1].replace(")", "").trim();
+                        }
+                        
+                        // Bersihkan kurung bawaan jika ada
+                        koorAwal = koorAwal.replace("(", "").replace(")", "");
+                      %>
+                      <span class="font-semibold text-gray-800"><%= namaMulai %></span> 
+                      
+                      <% if (koorAwal && koorAwal !== "-" && koorAwal !== "") { %>
+                        <br>
+                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= koorAwal %>)</span>
                       <% } %>
                     </td>
                     
                     <td class="border px-4 py-2">
-                      <span class="font-semibold text-gray-800"><%= row.tujuan %></span>
-                      <% if (row.koordinat_tujuan) { %>
-                        <span class="text-xs text-gray-500 block font-mono mt-0.5">(<%= row.koordinat_tujuan %>)</span>
+                      <% 
+                        let namaTujuan = row.tujuan ? row.tujuan.toString() : "";
+                        let koorTujuan = row.koordinat_tujuan ? row.koordinat_tujuan.toString() : "";
+                        
+                        if (namaTujuan.includes("(") && namaTujuan.includes(")")) {
+                          let splitData = namaTujuan.split("(");
+                          namaTujuan = splitData[0].trim();
+                          koorTujuan = splitData[1].replace(")", "").trim();
+                        }
+                        
+                        koorTujuan = koorTujuan.replace("(", "").replace(")", "");
+                      %>
+                      <span class="font-semibold text-gray-800"><%= namaTujuan %></span>
+                      
+                      <% if (koorTujuan && koorTujuan !== "-" && koorTujuan !== "") { %>
+                        <br>
+                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= koorTujuan %>)</span>
                       <% } %>
                     </td>
 
