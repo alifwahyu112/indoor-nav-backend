@@ -16,9 +16,9 @@
     #roomLabel {
       position: absolute; top: 16px; left: 50%;
       transform: translateX(-50%);
-      background: rgba(0,0,0,0.65);
-      color: white; padding: 6px 18px;
-      border-radius: 20px; font-size: 14px;
+      background: rgba(30,30,30,0.75);
+      color: white; padding: 8px 20px;
+      border-radius: 20px; font-size: 15px;
       z-index: 20; display: none;
       font-weight: bold; letter-spacing: 0.5px;
     }
@@ -31,11 +31,20 @@
       z-index: 20; font-size: 14px;
     }
     #btnBack:hover { background: #f0f0f0; }
+    #infoBox {
+      position: absolute; bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30,30,30,0.7);
+      color: #ccc; padding: 6px 16px;
+      border-radius: 12px; font-size: 12px;
+      z-index: 20; display: none;
+    }
   </style>
 </head>
 <body>
   <button id="btnBack" onclick="history.back()">← Kembali</button>
   <div id="roomLabel"></div>
+  <div id="infoBox"></div>
   <div id="loading">⏳ Memuat Model BIM 3D...</div>
   <canvas id="myCanvas"></canvas>
 
@@ -43,12 +52,26 @@
     import { Viewer } from "https://esm.sh/@xeokit/xeokit-sdk/src/viewer/Viewer.js";
     import { XKTLoaderPlugin } from "https://esm.sh/@xeokit/xeokit-sdk/src/plugins/XKTLoaderPlugin/XKTLoaderPlugin.js";
 
-    const params   = new URLSearchParams(window.location.search);
-    const urlModel = params.get("model") || "<%- modelUrl %>";
-    const roomId   = params.get("roomId") || "";
+    // Ambil semua parameter dari URL
+    const params    = new URLSearchParams(window.location.search);
+    const urlModel  = params.get("model") || "<%- modelUrl %>";
+    const roomId    = params.get("roomId") || "";
+    const roomName  = params.get("roomName") || roomId;
+    const coordsRaw = params.get("coords") || "";
 
     const loadingEl = document.getElementById("loading");
     const roomLabel = document.getElementById("roomLabel");
+    const infoBox   = document.getElementById("infoBox");
+
+    // Parse koordinat dari string "x,y,z"
+    function parseCoords(str) {
+      if (!str || str.trim() === "") return null;
+      const parts = str.split(",").map(s => parseFloat(s.trim()));
+      if (parts.length >= 3 && !parts.some(isNaN)) {
+        return { x: parts[0], y: parts[1], z: parts[2] };
+      }
+      return null;
+    }
 
     try {
       const viewer = new Viewer({ canvasId: "myCanvas", transparent: true });
@@ -67,58 +90,44 @@
         model.on("loaded", () => {
           loadingEl.style.display = "none";
 
-          if (roomId && roomId.trim() !== "") {
-            const scene = viewer.scene;
-            let foundEntityIds = [];
+          const coords = parseCoords(coordsRaw);
 
-            // Cara 1: cari langsung by ID
-            if (scene.objects[roomId]) {
-              foundEntityIds.push(roomId);
-            }
+          if (coords) {
+            // Ada koordinat — fly kamera langsung ke titik koordinat ruangan
+            console.log("Flying to koordinat:", coords);
 
-            // Cara 2: scan semua entity, cocokkan yang mengandung roomId
-            if (foundEntityIds.length === 0) {
-              const allIds = Object.keys(scene.objects);
-              for (const id of allIds) {
-                if (id.toUpperCase().includes(roomId.toUpperCase())) {
-                  foundEntityIds.push(id);
-                }
-              }
-            }
+            // Eye = posisi kamera (agak jauh di atas titik)
+            // Look = titik yang dilihat (koordinat ruangan)
+            // Up = arah atas
+            viewer.cameraFlight.flyTo({
+              eye:      [coords.x + 8, coords.y + 10, coords.z + 8],
+              look:     [coords.x,     coords.y,       coords.z],
+              up:       [0, 1, 0],
+              duration: 1.5
+            }, () => {
+              console.log("✅ Kamera berhasil mengarah ke:", roomName);
+            });
 
-            if (foundEntityIds.length > 0) {
-              // Highlight semua entity yang cocok
-              for (const eid of foundEntityIds) {
-                const ent = scene.objects[eid];
-                if (ent) {
-                  ent.highlighted = true;
-                  ent.selected = true;
-                }
-              }
+            // Tampilkan label nama ruangan
+            roomLabel.innerText = "📍 " + roomName;
+            roomLabel.style.display = "block";
 
-              // Fly kamera ke entity tersebut
-              viewer.cameraFlight.flyTo({
-                objectIds: foundEntityIds,
-                duration: 1.5,
-                fit: true,
-                fitFOV: 45
-              });
-
-              roomLabel.innerText = "📍 " + roomId;
-              roomLabel.style.display = "block";
-
-            } else {
-              // Entity tidak ketemu, tampilkan seluruh model
-              console.warn("Entity tidak ditemukan untuk roomId:", roomId);
-              viewer.cameraFlight.flyTo({ aabb: model.aabb, duration: 1.0 });
-              roomLabel.innerText = '⚠️ Room "' + roomId + '" tidak ditemukan di model';
-              roomLabel.style.display = "block";
-              roomLabel.style.background = "rgba(180,80,0,0.75)";
-            }
+            // Tampilkan koordinat di bawah
+            infoBox.innerText = "Koordinat: " + coordsRaw;
+            infoBox.style.display = "block";
 
           } else {
-            // Tidak ada roomId, tampilkan seluruh model
-            viewer.cameraFlight.flyTo({ aabb: model.aabb, duration: 0.5 });
+            // Tidak ada koordinat, tampilkan seluruh model
+            console.warn("Koordinat tidak tersedia, tampilkan seluruh model");
+            viewer.cameraFlight.flyTo({
+              aabb: model.aabb,
+              duration: 0.5
+            });
+
+            if (roomName) {
+              roomLabel.innerText = "📍 " + roomName;
+              roomLabel.style.display = "block";
+            }
           }
         });
 
