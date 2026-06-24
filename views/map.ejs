@@ -14,24 +14,21 @@
       <div class="p-6 border-b border-gray-200">
         <h1 class="text-2xl font-bold text-blue-600">Dashboard</h1>
       </div>
-
       <nav class="flex-1 p-4 space-y-2">
         <a href="/" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">👤 Data User</a>
         <a href="/riwayat_perjalanan" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">📍 Riwayat</a>
         <a href="/map" class="block py-2 px-3 rounded-md bg-blue-100 text-blue-700 font-medium">🗺️ Map</a>
         <a href="/admin" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">🔑 Admin</a>
       </nav>
-
       <div class="p-4 border-t border-gray-200">
         <a href="/logout" class="text-red-500 hover:underline font-medium">Logout</a>
       </div>
     </aside>
 
     <main class="flex-1 h-full overflow-y-auto p-6 bg-gray-100">
-      
+
       <header class="flex items-center justify-between mb-6">
         <h2 class="text-3xl font-semibold"><%= title %></h2>
-        
         <div class="relative w-64 md:w-80">
           <span class="absolute inset-y-0 left-0 flex items-center pl-3">
             <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -47,15 +44,17 @@
 
       <div class="bg-white p-6 rounded-lg shadow mb-8">
         <h3 class="text-lg font-bold mb-4 text-gray-700">Tambah Titik Map Baru</h3>
-        <form action="/tambah-map" method="POST" class="grid grid-cols-1 md:grid-cols-6 gap-4"> <input type="text" name="Floor_ID" placeholder="Floor ID (e.g. ground)" class="border p-2 rounded-md" required>
+        <form action="/tambah-map" method="POST" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <input type="text" name="Floor_ID" placeholder="Floor ID (e.g. ground)" class="border p-2 rounded-md" required>
           <input type="text" name="room_name" placeholder="Nama Ruangan" class="border p-2 rounded-md" required>
           <input type="text" name="coordinates" placeholder="Koordinat (x,y,z)" class="border p-2 rounded-md" required>
           <input type="text" name="room_id" placeholder="Room ID (Unique)" class="border p-2 rounded-md" required>
-          <input type="text" name="bim_image" placeholder="Link URL Denah BIM (Optional)" class="border p-2 rounded-md"> <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-bold transition">Tambah</button>
+          <input type="text" name="bim_image" placeholder="Link URL Denah BIM (Optional)" class="border p-2 rounded-md">
+          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-bold transition">Tambah</button>
         </form>
       </div>
 
-      <div class="bg-white p-6 rounded-lg shadow mb-10"> 
+      <div class="bg-white p-6 rounded-lg shadow mb-10">
         <h3 class="text-2xl font-semibold mb-4">Daftar Data Map</h3>
         <div class="overflow-x-auto">
           <table class="w-full border-collapse border border-gray-200 text-sm">
@@ -66,7 +65,8 @@
                 <th class="border px-4 py-2">Room Name</th>
                 <th class="border px-4 py-2">Coordinates</th>
                 <th class="border px-4 py-2">room_id</th>
-                <th class="border px-4 py-2">Denah BIM</th> <th class="border px-4 py-2 text-center">Aksi</th>
+                <th class="border px-4 py-2">Denah BIM</th>
+                <th class="border px-4 py-2 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -78,10 +78,10 @@
                     <td class="border px-4 py-2"><%= map.room_name %></td>
                     <td class="border px-4 py-2 font-mono text-xs text-blue-600"><%= map.coordinates %></td>
                     <td class="border px-4 py-2 font-semibold"><%= map.room_id %></td>
-                    
+
                     <td class="border px-4 py-2">
                       <% if (map.bim_image && map.bim_image.trim() !== "") { %>
-                        <a href="/viewer?model=<%= map.bim_image %>" target="_blank" class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 text-xs font-semibold inline-block">👁️ Lihat BIM 3D</a>
+                        <a href="/viewer?model=<%= encodeURIComponent(map.bim_image) %>&roomId=<%= map.room_id %>" target="_blank" class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 text-xs font-semibold inline-block">👁️ Lihat BIM 3D</a>
                       <% } else { %>
                         <span class="text-gray-400 italic text-xs">Belum ada denah</span>
                       <% } %>
@@ -95,7 +95,8 @@
                 <% }) %>
               <% } else { %>
                 <tr>
-                  <td colspan="7" class="text-center py-10 text-gray-500 italic">Belum ada data map.</td> </tr>
+                  <td colspan="7" class="text-center py-10 text-gray-500 italic">Belum ada data map.</td>
+                </tr>
               <% } %>
             </tbody>
           </table>
@@ -104,6 +105,7 @@
     </main>
   </div>
 
+  <!-- Modal Edit -->
   <div id="editModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden overflow-y-auto h-full w-full z-50 flex justify-center items-center">
     <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md mx-4 transform transition-all">
       <div class="flex justify-between items-center mb-6">
@@ -140,9 +142,9 @@
     </div>
   </div>
 
+  <!-- Modal Hapus -->
   <div id="modalHapus" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-gray-900 bg-opacity-40 backdrop-blur-sm" onclick="tutupModalHapus()"></div>
-    
     <div class="bg-white text-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6 relative z-10 border border-gray-200">
       <div class="flex items-center space-x-3 text-red-600 mb-3">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,30 +152,26 @@
         </svg>
         <h3 class="text-xl font-bold tracking-tight">Hapus Titik Map</h3>
       </div>
-      
       <p class="text-gray-600 text-sm mb-4 leading-relaxed">
         Anda akan menghapus secara permanen data titik map ruangan <span id="namaRuanganModal" class="font-bold text-gray-900 underline decoration-red-500 decoration-2"></span>. Tindakan ini <span class="text-red-600 font-semibold">tidak dapat dibatalkan</span>.
       </p>
-      
       <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg text-xs mb-5 flex items-start space-x-2">
         <span class="text-base leading-none">⚠️</span>
         <span>Titik lokasi ruangan beserta koordinat penunjuk jalan AR ini akan hilang sepenuhnya dari sistem.</span>
       </div>
-
       <div class="mb-6">
         <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
           Ketik Room ID <span id="roomTargetLabel" class="text-red-600 font-black bg-red-50 px-1.5 py-0.5 rounded border border-red-200 font-sans"></span> untuk mengonfirmasi:
         </label>
-        <input 
-          type="text" 
-          id="inputKonfirmasiHapus" 
+        <input
+          type="text"
+          id="inputKonfirmasiHapus"
           onkeyup="validasiTeksHapus()"
-          placeholder="Masukkan Room ID (e.g. MBPJS)" 
+          placeholder="Masukkan Room ID (e.g. MBPJS)"
           class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-semibold tracking-wide"
           autocomplete="off"
         >
       </div>
-
       <div class="flex space-x-3 justify-end text-sm font-semibold">
         <button type="button" onclick="tutupModalHapus()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all border border-gray-200">Batal</button>
         <a id="linkEksekusiHapus" href="#" class="px-4 py-2 bg-gray-200 text-gray-400 rounded-lg pointer-events-none cursor-not-allowed transition-all inline-flex items-center shadow-sm">Hapus Selamanya</a>
@@ -188,7 +186,6 @@
     function bukaModalHapus(id_map, roomName, room_id) {
       mapIdYangAkanDihapus = id_map;
       roomIdTargetPencocokan = room_id;
-      
       document.getElementById("namaRuanganModal").innerText = roomName;
       document.getElementById("roomTargetLabel").innerText = room_id;
       document.getElementById("modalHapus").classList.remove("hidden");
@@ -198,7 +195,6 @@
     function tutupModalHapus() {
       document.getElementById("modalHapus").classList.add("hidden");
       document.getElementById("inputKonfirmasiHapus").value = "";
-      
       const btnHapus = document.getElementById("linkEksekusiHapus");
       btnHapus.classList.remove("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md");
       btnHapus.classList.add("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
@@ -210,11 +206,10 @@
     function validasiTeksHapus() {
       const textInput = document.getElementById("inputKonfirmasiHapus").value;
       const btnHapus = document.getElementById("linkEksekusiHapus");
-
       if (textInput.trim() === roomIdTargetPencocokan) {
         btnHapus.classList.remove("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
         btnHapus.classList.add("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md", "shadow-red-200");
-        btnHapus.href = `/delete-map/${mapIdYangAkanDihapus}`;
+        btnHapus.href = /delete-map/ + mapIdYangAkanDihapus;
       } else {
         btnHapus.classList.remove("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md", "shadow-red-200");
         btnHapus.classList.add("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
@@ -250,14 +245,13 @@
       input.focus();
     }
 
-    // UPDATE FUNGSI OPEN EDIT MODAL UNTUK MEMBACA PARAMETER BIM_IMAGE
     function openEditModal(id, floor, name, coords, rid, bimImage) {
       document.getElementById('edit_id_map').value = id;
       document.getElementById('edit_Floor_ID').value = floor;
       document.getElementById('edit_room_name').value = name;
       document.getElementById('edit_coordinates').value = coords;
       document.getElementById('edit_room_id').value = rid;
-      document.getElementById('edit_bim_image').value = (bimImage && bimImage !== 'undefined') ? bimImage : ''; // Set Value Baru
+      document.getElementById('edit_bim_image').value = (bimImage && bimImage !== 'undefined') ? bimImage : '';
       document.getElementById('editModal').classList.remove('hidden');
       document.body.style.overflow = 'hidden';
     }

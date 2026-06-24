@@ -7,66 +7,132 @@
   <style>
     body { margin: 0; padding: 0; overflow: hidden; background-color: #e0e6ed; font-family: sans-serif; }
     #myCanvas { width: 100vw; height: 100vh; display: block; }
-    #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 20px; color: #3b82f6; z-index: 10; }
+    #loading {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: bold; font-size: 20px;
+      color: #3b82f6; z-index: 10; text-align: center;
+    }
+    #roomLabel {
+      position: absolute; top: 16px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.65);
+      color: white; padding: 6px 18px;
+      border-radius: 20px; font-size: 14px;
+      z-index: 20; display: none;
+      font-weight: bold; letter-spacing: 0.5px;
+    }
+    #btnBack {
+      position: absolute; top: 16px; left: 16px;
+      background: white; border: none;
+      padding: 8px 14px; border-radius: 8px;
+      cursor: pointer; font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 20; font-size: 14px;
+    }
+    #btnBack:hover { background: #f0f0f0; }
   </style>
 </head>
 <body>
-  
-  <div id="loading">Memuat Model BIM 3D...</div>
+  <button id="btnBack" onclick="history.back()">← Kembali</button>
+  <div id="roomLabel"></div>
+  <div id="loading">⏳ Memuat Model BIM 3D...</div>
   <canvas id="myCanvas"></canvas>
 
   <script type="module">
-    // JURUS PAMUNGKAS: Tembak langsung ke source internal agar esm.sh me-resolve dependensi secara otomatis
     import { Viewer } from "https://esm.sh/@xeokit/xeokit-sdk/src/viewer/Viewer.js";
     import { XKTLoaderPlugin } from "https://esm.sh/@xeokit/xeokit-sdk/src/plugins/XKTLoaderPlugin/XKTLoaderPlugin.js";
 
-    try {
-      // Inisialisasi Canvas
-      const viewer = new Viewer({
-        canvasId: "myCanvas",
-        transparent: true
-      });
+    const params   = new URLSearchParams(window.location.search);
+    const urlModel = params.get("model") || "<%- modelUrl %>";
+    const roomId   = params.get("roomId") || "";
 
-      // Panggil Plugin untuk membaca format .xkt
+    const loadingEl = document.getElementById("loading");
+    const roomLabel = document.getElementById("roomLabel");
+
+    try {
+      const viewer = new Viewer({ canvasId: "myCanvas", transparent: true });
       const xktLoader = new XKTLoaderPlugin(viewer);
 
-      // Ambil Link Model dari parameter URL server Node.js lu
-      const urlModel = "<%- modelUrl %>";
-
-      if (urlModel && urlModel.trim() !== "") {
-        console.log("Mencoba memuat model dari:", urlModel);
-        
+      if (!urlModel || urlModel.trim() === "") {
+        loadingEl.innerText = "❌ File BIM tidak ditemukan!";
+        loadingEl.style.color = "red";
+      } else {
         const model = xktLoader.load({
-          id: "TOWER_MODEL",
+          id: "BIM_MODEL",
           src: urlModel,
-          edges: false // Dimatikan karena triangles terlalu padat sesuai warning terminal tadi
+          edges: false
         });
 
         model.on("loaded", () => {
-          console.log("Model 3D Berhasil Dimuat Sempurna!");
-          document.getElementById("loading").style.display = "none";
-          
-          // Paksa kamera terbang fokus ke tengah-tengah objek bangunan
-          viewer.cameraFlight.flyTo({
-            aabb: model.aabb,
-            duration: 0.5
-          });
+          loadingEl.style.display = "none";
+
+          if (roomId && roomId.trim() !== "") {
+            const scene = viewer.scene;
+            let foundEntityIds = [];
+
+            // Cara 1: cari langsung by ID
+            if (scene.objects[roomId]) {
+              foundEntityIds.push(roomId);
+            }
+
+            // Cara 2: scan semua entity, cocokkan yang mengandung roomId
+            if (foundEntityIds.length === 0) {
+              const allIds = Object.keys(scene.objects);
+              for (const id of allIds) {
+                if (id.toUpperCase().includes(roomId.toUpperCase())) {
+                  foundEntityIds.push(id);
+                }
+              }
+            }
+
+            if (foundEntityIds.length > 0) {
+              // Highlight semua entity yang cocok
+              for (const eid of foundEntityIds) {
+                const ent = scene.objects[eid];
+                if (ent) {
+                  ent.highlighted = true;
+                  ent.selected = true;
+                }
+              }
+
+              // Fly kamera ke entity tersebut
+              viewer.cameraFlight.flyTo({
+                objectIds: foundEntityIds,
+                duration: 1.5,
+                fit: true,
+                fitFOV: 45
+              });
+
+              roomLabel.innerText = "📍 " + roomId;
+              roomLabel.style.display = "block";
+
+            } else {
+              // Entity tidak ketemu, tampilkan seluruh model
+              console.warn("Entity tidak ditemukan untuk roomId:", roomId);
+              viewer.cameraFlight.flyTo({ aabb: model.aabb, duration: 1.0 });
+              roomLabel.innerText = '⚠️ Room "' + roomId + '" tidak ditemukan di model';
+              roomLabel.style.display = "block";
+              roomLabel.style.background = "rgba(180,80,0,0.75)";
+            }
+
+          } else {
+            // Tidak ada roomId, tampilkan seluruh model
+            viewer.cameraFlight.flyTo({ aabb: model.aabb, duration: 0.5 });
+          }
         });
-        
+
         model.on("error", (errMsg) => {
-          console.error("Error loading model:", errMsg);
-          document.getElementById("loading").innerText = "❌ Gagal memuat file BIM!";
-          document.getElementById("loading").style.color = "red";
+          console.error("Error:", errMsg);
+          loadingEl.innerText = "❌ Gagal memuat file BIM!";
+          loadingEl.style.color = "red";
         });
-        
-      } else {
-        document.getElementById("loading").innerText = "❌ File BIM tidak ditemukan atau Link kosong!";
-        document.getElementById("loading").style.color = "red";
       }
+
     } catch (err) {
-      console.error("Xeokit Initialization Error:", err);
-      document.getElementById("loading").innerText = "❌ Error Sistem Viewer 3D!";
-      document.getElementById("loading").style.color = "red";
+      console.error("Xeokit Error:", err);
+      loadingEl.innerText = "❌ Error Sistem Viewer 3D!";
+      loadingEl.style.color = "red";
     }
   </script>
 </body>
