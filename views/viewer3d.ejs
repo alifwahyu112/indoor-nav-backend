@@ -71,6 +71,29 @@
       return null;
     }
 
+    // Konversi koordinat Unity ke koordinat xeokit
+    // AABB xeokit: X[-16.84 ~ 50.19], Y[-0.02 ~ 5.33], Z[-84.96 ~ 0.06]
+    // Koordinat Unity range: X[-100 ~ 0], Z[-100 ~ 0]
+    function unityToXeokit(ux, uy, uz) {
+      // Range Unity (berdasarkan data koordinat di database)
+      const unityMinX = -100, unityMaxX = 0;
+      const unityMinZ = -100, unityMaxZ = 0;
+
+      // Range xeokit (dari AABB model)
+      const xeoMinX = -16.84, xeoMaxX = 50.19;
+      const xeoMinZ = -84.96, xeoMaxZ = 0.06;
+      const xeoMidY = 2.65; // center Y model
+
+      // Normalisasi Unity ke 0-1 lalu map ke xeokit
+      const ratioX = (ux - unityMinX) / (unityMaxX - unityMinX);
+      const ratioZ = (uz - unityMinZ) / (unityMaxZ - unityMinZ);
+
+      const xeoX = xeoMinX + ratioX * (xeoMaxX - xeoMinX);
+      const xeoZ = xeoMinZ + ratioZ * (xeoMaxZ - xeoMinZ);
+
+      return { x: xeoX, y: xeoMidY, z: xeoZ };
+    }
+
     try {
       const viewer = new Viewer({ canvasId: "myCanvas", transparent: true });
       const xktLoader = new XKTLoaderPlugin(viewer);
@@ -88,51 +111,31 @@
         model.on("loaded", () => {
           loadingEl.style.display = "none";
 
-          const aabb = model.aabb;
-          // Titik tengah model (center)
-          const cx = (aabb[0] + aabb[3]) / 2;
-          const cy = (aabb[1] + aabb[4]) / 2;
-          const cz = (aabb[2] + aabb[5]) / 2;
-
-          // Ukuran model
-          const sizeX = Math.abs(aabb[3] - aabb[0]);
-          const sizeY = Math.abs(aabb[4] - aabb[1]);
-          const sizeZ = Math.abs(aabb[5] - aabb[2]);
-          const maxSize = Math.max(sizeX, sizeY, sizeZ);
-
-          console.log("Model AABB:", aabb);
-          console.log("Model center:", cx, cy, cz);
-          console.log("Model size:", sizeX, sizeY, sizeZ);
-
           const coords = parseCoords(coordsRaw);
 
           if (coords) {
-            // Koordinat ruangan relatif terhadap model
-            // Konversi: tambahkan offset center model ke koordinat ruangan
-            const targetX = cx + coords.x - cx; // = coords.x (sudah dalam world space)
-            const targetY = cy;                  // pakai Y center model (lantai)
-            const targetZ = cz + coords.z - cz; // = coords.z
+            // Konversi koordinat Unity ke xeokit
+            const target = unityToXeokit(coords.x, coords.y, coords.z);
 
-            // Jarak kamera = 15% dari ukuran model
-            const camDist = maxSize * 0.15;
+            console.log("Unity coords:", coords);
+            console.log("Xeokit target:", target);
 
-            console.log("Target:", targetX, targetY, targetZ, "| CamDist:", camDist);
+            // Jarak kamera = 10 unit (proporsional model)
+            const camDist = 10;
 
-            // Langsung fly ke posisi ruangan
             viewer.cameraFlight.flyTo({
-              eye:  [targetX,            targetY + camDist, targetZ + camDist],
-              look: [targetX,            targetY,           targetZ],
+              eye:  [target.x,           target.y + camDist, target.z + camDist],
+              look: [target.x,           target.y,           target.z],
               up:   [0, 1, 0],
               duration: 1.5
             });
 
             roomLabel.innerText = "📍 " + roomName;
             roomLabel.style.display = "block";
-            infoBox.innerText = "Koordinat: " + coordsRaw;
+            infoBox.innerText = "📌 " + coordsRaw;
             infoBox.style.display = "block";
 
           } else {
-            // Tidak ada koordinat, tampilkan seluruh model
             viewer.cameraFlight.flyTo({
               aabb: model.aabb,
               duration: 0.5
