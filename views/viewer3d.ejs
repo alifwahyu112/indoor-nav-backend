@@ -96,6 +96,7 @@
 
     try {
       const viewer = new Viewer({ canvasId: "myCanvas", transparent: true });
+window._viewer = viewer; // ekspos ke global untuk debug
       const xktLoader = new XKTLoaderPlugin(viewer);
 
       if (!urlModel || urlModel.trim() === "") {
