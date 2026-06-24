@@ -88,29 +88,46 @@
         model.on("loaded", () => {
           loadingEl.style.display = "none";
 
+          const aabb = model.aabb;
+          // Titik tengah model (center)
+          const cx = (aabb[0] + aabb[3]) / 2;
+          const cy = (aabb[1] + aabb[4]) / 2;
+          const cz = (aabb[2] + aabb[5]) / 2;
+
+          // Ukuran model
+          const sizeX = Math.abs(aabb[3] - aabb[0]);
+          const sizeY = Math.abs(aabb[4] - aabb[1]);
+          const sizeZ = Math.abs(aabb[5] - aabb[2]);
+          const maxSize = Math.max(sizeX, sizeY, sizeZ);
+
+          console.log("Model AABB:", aabb);
+          console.log("Model center:", cx, cy, cz);
+          console.log("Model size:", sizeX, sizeY, sizeZ);
+
           const coords = parseCoords(coordsRaw);
 
           if (coords) {
-            // Hitung ukuran model untuk jarak kamera proporsional
-            const aabb = model.aabb;
-            const modelSize = Math.abs(aabb[3] - aabb[0]);
-            const camDistance = modelSize * 0.15;
+            // Koordinat ruangan relatif terhadap model
+            // Konversi: tambahkan offset center model ke koordinat ruangan
+            const targetX = cx + coords.x - cx; // = coords.x (sudah dalam world space)
+            const targetY = cy;                  // pakai Y center model (lantai)
+            const targetZ = cz + coords.z - cz; // = coords.z
 
-            console.log("Model size:", modelSize, "| Cam distance:", camDistance);
-            console.log("Flying to koordinat:", coords);
+            // Jarak kamera = 15% dari ukuran model
+            const camDist = maxSize * 0.15;
 
+            console.log("Target:", targetX, targetY, targetZ, "| CamDist:", camDist);
+
+            // Langsung fly ke posisi ruangan
             viewer.cameraFlight.flyTo({
-              eye:  [coords.x, coords.y + camDistance, coords.z + camDistance],
-              look: [coords.x, coords.y,               coords.z],
+              eye:  [targetX,            targetY + camDist, targetZ + camDist],
+              look: [targetX,            targetY,           targetZ],
               up:   [0, 1, 0],
               duration: 1.5
-            }, () => {
-              console.log("✅ Kamera berhasil mengarah ke:", roomName);
             });
 
             roomLabel.innerText = "📍 " + roomName;
             roomLabel.style.display = "block";
-
             infoBox.innerText = "Koordinat: " + coordsRaw;
             infoBox.style.display = "block";
 
@@ -120,7 +137,6 @@
               aabb: model.aabb,
               duration: 0.5
             });
-
             if (roomName) {
               roomLabel.innerText = "📍 " + roomName;
               roomLabel.style.display = "block";
