@@ -52,7 +52,6 @@
     import { Viewer } from "https://esm.sh/@xeokit/xeokit-sdk/src/viewer/Viewer.js";
     import { XKTLoaderPlugin } from "https://esm.sh/@xeokit/xeokit-sdk/src/plugins/XKTLoaderPlugin/XKTLoaderPlugin.js";
 
-    // Ambil semua parameter dari URL
     const params    = new URLSearchParams(window.location.search);
     const urlModel  = params.get("model") || "<%- modelUrl %>";
     const roomId    = params.get("roomId") || "";
@@ -63,7 +62,6 @@
     const roomLabel = document.getElementById("roomLabel");
     const infoBox   = document.getElementById("infoBox");
 
-    // Parse koordinat dari string "x,y,z"
     function parseCoords(str) {
       if (!str || str.trim() === "") return null;
       const parts = str.split(",").map(s => parseFloat(s.trim()));
@@ -93,32 +91,31 @@
           const coords = parseCoords(coordsRaw);
 
           if (coords) {
-            // Ada koordinat — fly kamera langsung ke titik koordinat ruangan
+            // Hitung ukuran model untuk jarak kamera proporsional
+            const aabb = model.aabb;
+            const modelSize = Math.abs(aabb[3] - aabb[0]);
+            const camDistance = modelSize * 0.15;
+
+            console.log("Model size:", modelSize, "| Cam distance:", camDistance);
             console.log("Flying to koordinat:", coords);
 
-            // Eye = posisi kamera (agak jauh di atas titik)
-            // Look = titik yang dilihat (koordinat ruangan)
-            // Up = arah atas
             viewer.cameraFlight.flyTo({
-              eye:      [coords.x + 8, coords.y + 10, coords.z + 8],
-              look:     [coords.x,     coords.y,       coords.z],
-              up:       [0, 1, 0],
+              eye:  [coords.x, coords.y + camDistance, coords.z + camDistance],
+              look: [coords.x, coords.y,               coords.z],
+              up:   [0, 1, 0],
               duration: 1.5
             }, () => {
               console.log("✅ Kamera berhasil mengarah ke:", roomName);
             });
 
-            // Tampilkan label nama ruangan
             roomLabel.innerText = "📍 " + roomName;
             roomLabel.style.display = "block";
 
-            // Tampilkan koordinat di bawah
             infoBox.innerText = "Koordinat: " + coordsRaw;
             infoBox.style.display = "block";
 
           } else {
             // Tidak ada koordinat, tampilkan seluruh model
-            console.warn("Koordinat tidak tersedia, tampilkan seluruh model");
             viewer.cameraFlight.flyTo({
               aabb: model.aabb,
               duration: 0.5
