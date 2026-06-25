@@ -44,28 +44,14 @@
         </div>
       </header>
 
-      <form action="/tambah-admin" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-6 rounded-lg shadow mb-8">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-            <input type="text" name="username" placeholder="Masukkan Username" class="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+      <div class="bg-white p-6 rounded-lg shadow">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-2xl font-semibold">Daftar Admin</h3>
+          <button onclick="openAddModal()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-bold transition shadow-sm flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Tambah Admin
+          </button>
         </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input type="text" name="password" placeholder="Masukkan Password" class="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" name="email" placeholder="Masukkan Email Admin" class="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-        </div>
-        <div class="flex items-end">
-            <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 w-full md:w-auto transition">
-              + Tambah Admin
-            </button>
-        </div>
-      </form>
-
-<div class="bg-white p-6 rounded-lg shadow">
-        <h3 class="text-2xl font-semibold mb-4">Daftar Admin</h3>
         <div class="overflow-x-auto">
           <table class="w-full border-collapse border border-gray-200 text-sm">
             <thead>
@@ -79,29 +65,56 @@
             </thead>
             <tbody>
               <% if (admins && admins.length > 0) { %>
-                  <% admins.forEach(admin => { %>
-                    <tr class="hover:bg-gray-50 transition">
-                      <td class="border px-4 py-2 text-center font-bold"><%= admin.id %></td>
-                      <td class="border px-4 py-2 font-medium"><%= admin.username %></td>
-                      <td class="border px-4 py-2 text-gray-600"><%= admin.email || '-' %></td>
-                      <td class="border px-4 py-2">******</td>
-                      <td class="border px-4 py-2 text-center">
-                        <button type="button" onclick="bukaModalHapus('<%= admin.id %>', '<%= admin.username %>')" class="text-red-500 hover:underline font-medium">Hapus</button>
-                      </td>
-                    </tr>
-                  <% }) %>
-              <% } else { %>
-                  <tr>
-                      <td colspan="5" class="text-center py-8 text-gray-500">
-                        <p class="text-lg">📂 Belum ada data admin.</p>
-                      </td>
+                <% admins.forEach(admin => { %>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border px-4 py-2 text-center font-bold"><%= admin.id %></td>
+                    <td class="border px-4 py-2 font-medium"><%= admin.username %></td>
+                    <td class="border px-4 py-2 text-gray-600"><%= admin.email || '-' %></td>
+                    <td class="border px-4 py-2">******</td>
+                    <td class="border px-4 py-2 text-center">
+                      <button type="button" onclick="bukaModalHapus('<%= admin.id %>', '<%= admin.username %>')" class="text-red-500 hover:underline font-medium">Hapus</button>
+                    </td>
                   </tr>
+                <% }) %>
+              <% } else { %>
+                <tr>
+                  <td colspan="5" class="text-center py-8 text-gray-500">
+                    <p class="text-lg">📂 Belum ada data admin.</p>
+                  </td>
+                </tr>
               <% } %>
             </tbody>
           </table>
         </div>
       </div>
     </main>
+  </div>
+
+  <div id="addModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden overflow-y-auto h-full w-full z-50 flex justify-center items-center">
+    <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md mx-4 transform transition-all relative">
+      <div class="flex justify-between items-center mb-5 border-b pb-3 border-gray-200">
+        <h3 class="text-xl font-bold text-gray-800">Tambah Admin Baru</h3>
+        <button onclick="closeAddModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+      <form action="/tambah-admin" method="POST" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Username</label>
+          <input type="text" name="username" placeholder="Masukkan Username" class="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-green-500 outline-none" required>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+          <input type="email" name="email" placeholder="contoh@rsiahmadyani.com" class="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-green-500 outline-none" required>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+          <input type="password" name="password" placeholder="Masukkan Password" class="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-green-500 outline-none" required>
+        </div>
+        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 mt-4">
+          <button type="button" onclick="closeAddModal()" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition font-medium">Batal</button>
+          <button type="submit" class="bg-green-600 text-white px-5 py-2 rounded-md hover:bg-green-700 font-bold shadow-md transition">Simpan Admin</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div id="modalHapus" class="fixed inset-0 z-50 flex items-center justify-center hidden">
@@ -114,50 +127,38 @@
         </svg>
         <h3 class="text-xl font-bold tracking-tight">Hapus Akun Admin</h3>
       </div>
-      
       <p class="text-gray-600 text-sm mb-4 leading-relaxed">
         Anda akan menghapus secara permanen hak akses administrator milik <span id="namaAdminModal" class="font-bold text-gray-900 underline decoration-red-500 decoration-2"></span>. Tindakan ini <span class="text-red-600 font-semibold">tidak dapat dibatalkan</span>.
       </p>
-      
       <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg text-xs mb-5 flex items-start space-x-2">
         <span class="text-base leading-none">⚠️</span>
         <span>Akun ini tidak akan bisa digunakan lagi untuk mengelola dashboard website backend ini.</span>
       </div>
-
       <div class="mb-6">
         <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
           Ketik ID Admin <span id="idTargetLabel" class="text-red-600 font-black bg-red-50 px-1.5 py-0.5 rounded border border-red-200"></span> untuk mengonfirmasi:
         </label>
-        <input 
-          type="text" 
-          id="inputKonfirmasiHapus" 
-          onkeyup="validasiTeksHapus()"
-          placeholder="Masukkan ID Administrator" 
-          class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono font-semibold tracking-wide"
-          autocomplete="off"
-        >
+        <input type="text" id="inputKonfirmasiHapus" onkeyup="validasiTeksHapus()" placeholder="Masukkan ID Administrator" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono font-semibold tracking-wide" autocomplete="off">
       </div>
-
       <div class="flex space-x-3 justify-end text-sm font-semibold">
-        <button 
-          type="button" 
-          onclick="tutupModalHapus()" 
-          class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all border border-gray-200"
-        >
-          Batal
-        </button>
-        <a 
-          id="linkEksekusiHapus" 
-          href="#" 
-          class="px-4 py-2 bg-gray-200 text-gray-400 rounded-lg pointer-events-none cursor-not-allowed transition-all inline-flex items-center shadow-sm"
-        >
-          Hapus Selamanya
-        </a>
+        <button type="button" onclick="tutupModalHapus()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all border border-gray-200">Batal</button>
+        <a id="linkEksekusiHapus" href="#" class="px-4 py-2 bg-gray-200 text-gray-400 rounded-lg pointer-events-none cursor-not-allowed transition-all inline-flex items-center shadow-sm">Hapus Selamanya</a>
       </div>
     </div>
   </div>
 
   <script>
+    // FUNGSI MODAL TAMBAH
+    function openAddModal() {
+      document.getElementById('addModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden'; 
+    }
+    function closeAddModal() {
+      document.getElementById('addModal').classList.add('hidden');
+      document.body.style.overflow = 'auto'; 
+    }
+
+    // FUNGSI MODAL HAPUS & SEARCH
     let adminIdYangAkanDihapus = null;
 
     function bukaModalHapus(id, username) {
@@ -171,7 +172,6 @@
     function tutupModalHapus() {
       document.getElementById("modalHapus").classList.add("hidden");
       document.getElementById("inputKonfirmasiHapus").value = "";
-      
       const btnHapus = document.getElementById("linkEksekusiHapus");
       btnHapus.classList.remove("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md");
       btnHapus.classList.add("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
@@ -182,7 +182,6 @@
     function validasiTeksHapus() {
       const textInput = document.getElementById("inputKonfirmasiHapus").value;
       const btnHapus = document.getElementById("linkEksekusiHapus");
-      
       if (textInput.trim() === String(adminIdYangAkanDihapus)) {
         btnHapus.classList.remove("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
         btnHapus.classList.add("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md", "shadow-red-200");
@@ -198,28 +197,18 @@
       const input = document.getElementById("searchInput");
       const clearBtn = document.getElementById("clearSearch");
       const filter = input.value.toLowerCase();
-      
-      if (input.value.length > 0) {
-        clearBtn.classList.remove('hidden');
-      } else {
-        clearBtn.classList.add('hidden');
-      }
-
+      if (input.value.length > 0) { clearBtn.classList.remove('hidden'); } else { clearBtn.classList.add('hidden'); }
       const table = document.querySelector("table tbody");
       const tr = table.getElementsByTagName("tr");
-
       for (let i = 0; i < tr.length; i++) {
         if (tr[i].cells.length < 2) continue;
-
         let match = false;
         const td = tr[i].getElementsByTagName("td");
-
         for (let j = 0; j < td.length; j++) {
           if (td[j]) {
             const textValue = td[j].textContent || td[j].innerText;
             if (textValue.toLowerCase().indexOf(filter) > -1) {
-              match = true;
-              break;
+              match = true; break;
             }
           }
         }
@@ -232,6 +221,12 @@
       input.value = "";
       searchTable();
       input.focus(); 
+    }
+
+    // Klik background untuk menutup modal tambah
+    window.onclick = function(event) {
+      const addModal = document.getElementById('addModal');
+      if (event.target == addModal) { closeAddModal(); }
     }
   </script>
 </body>
