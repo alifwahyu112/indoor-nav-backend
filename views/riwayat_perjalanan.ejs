@@ -3,177 +3,211 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><%= title %></title>
+  <title>Riwayat Perjalanan - Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
   <div class="flex h-screen overflow-hidden">
 
+    <!-- Sidebar Tetap Sama -->
     <aside class="w-64 bg-white shadow-md flex flex-col z-10">
       <div class="p-6 border-b border-gray-200">
         <h1 class="text-2xl font-bold text-blue-600">Dashboard</h1>
       </div>
-
       <nav class="flex-1 p-4 space-y-2">
         <a href="/" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">👤 Data User</a>
         <a href="/riwayat_perjalanan" class="block py-2 px-3 rounded-md bg-blue-100 text-blue-700 font-medium">📍 Riwayat</a>
         <a href="/map" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">🗺️ Map</a>
         <a href="/admin" class="block py-2 px-3 rounded-md hover:bg-blue-100 font-medium">🔑 Admin</a>
       </nav>
-
       <div class="p-4 border-t border-gray-200">
         <a href="/logout" class="text-red-500 hover:underline font-medium">Logout</a>
       </div>
     </aside>
 
     <main class="flex-1 h-full overflow-y-auto p-6 bg-gray-100">
-      
-      <header class="flex items-center justify-between mb-6">
-        <h2 class="text-3xl font-semibold"><%= title %></h2>
 
+      <!-- Header & Search -->
+      <header class="flex items-center justify-between mb-6">
+        <h2 class="text-3xl font-semibold">Data Riwayat</h2>
         <div class="relative w-64 md:w-80">
           <span class="absolute inset-y-0 left-0 flex items-center pl-3">
             <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </span>
           <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Cari data riwayat..." class="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm">
           <button id="clearSearch" onclick="clearInput()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 hidden">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
       </header>
 
-      <div class="mt-8 bg-white p-6 rounded-lg shadow mb-10"> 
+      <div class="bg-white p-6 rounded-lg shadow mb-10">
         <h3 class="text-2xl font-semibold mb-4">Daftar Data Riwayat Perjalanan</h3>
         
-        <div class="overflow-x-auto">
-          <table class="w-full border-collapse border border-gray-200 text-sm">
+        <div class="overflow-x-auto rounded-t-lg border border-gray-200 border-b-0">
+          <table class="w-full border-collapse text-sm">
             <thead>
-              <tr class="bg-blue-50 text-left">
-                <th class="border px-4 py-2">ID</th>
-                <th class="border px-4 py-2">Nama Pengguna (Unity)</th>
-                <th class="border px-4 py-2">Mulai (Scan QR)</th>
-                <th class="border px-4 py-2">Tujuan</th>
-                <th class="border px-4 py-2">Tanggal</th>
-                <th class="border px-4 py-2 text-center">Aksi</th>
+              <tr class="bg-blue-50 text-left border-b border-gray-200">
+                <th class="px-4 py-3 font-semibold text-gray-700">ID</th>
+                <th class="px-4 py-3 font-semibold text-gray-700">Nama Pengguna</th>
+                <th class="px-4 py-3 font-semibold text-gray-700">Mulai (Scan QR)</th>
+                <th class="px-4 py-3 font-semibold text-gray-700">Tujuan</th>
+                <th class="px-4 py-3 font-semibold text-gray-700">Tanggal</th>
+                <th class="px-4 py-3 font-semibold text-gray-700 text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody>
-              <% if (riwayat_perjalanans && riwayat_perjalanans.length > 0) { %>
-                <% riwayat_perjalanans.forEach((row) => { %>
-                  <tr class="hover:bg-gray-50">
-                    <td class="border px-4 py-2 font-bold"><%= row.id %></td>
-                    
-                    <td class="border px-4 py-2 text-blue-600 font-bold capitalize">
-                      <%= row.user_id %>
-                    </td>
-                    
-                    <td class="border px-4 py-2">
-                      <% 
-                        let textMulai = row.mulai ? row.mulai.toString() : "";
-                        let txtKoorAwal = row.koordinat_awal ? row.koordinat_awal.toString() : "";
-                        
-                        if (textMulai.indexOf("(") !== -1) {
-                          let splitIndex = textMulai.indexOf("(");
-                          txtKoorAwal = textMulai.substring(splitIndex); 
-                          textMulai = textMulai.substring(0, splitIndex).trim(); 
-                        }
-                        
-                        if (txtKoorAwal) {
-                           txtKoorAwal = txtKoorAwal.replace("(", "").replace(")", "").trim();
-                        }
-                      %>
-                      <span class="font-semibold text-gray-800"><%= textMulai %></span> 
-                      <% if (txtKoorAwal && txtKoorAwal !== "-") { %>
-                        <br>
-                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= txtKoorAwal %>)</span>
-                      <% } %>
-                    </td>
-                    
-                    <td class="border px-4 py-2">
-                      <% 
-                        let textTujuan = row.tujuan ? row.tujuan.toString() : "";
-                        let txtKoorTujuan = row.koordinat_tujuan ? row.koordinat_tujuan.toString() : "";
-                        
-                        if (textTujuan.indexOf("(") !== -1) {
-                          let splitIdx = textTujuan.indexOf("(");
-                          txtKoorTujuan = textTujuan.substring(splitIdx);
-                          textTujuan = textTujuan.substring(0, splitIdx).trim();
-                        }
-                        
-                        if (txtKoorTujuan) {
-                           txtKoorTujuan = txtKoorTujuan.replace("(", "").replace(")", "").trim();
-                        }
-                      %>
-                      <span class="font-semibold text-gray-800"><%= textTujuan %></span>
-                      <% if (txtKoorTujuan && txtKoorTujuan !== "-") { %>
-                        <br>
-                        <span class="text-xs text-gray-500 font-mono mt-0.5">(<%= txtKoorTujuan %>)</span>
-                      <% } %>
-                    </td>
-
-                    <td class="border px-4 py-2">
-                      <%= new Date(row.tanggal).toLocaleString('id-ID') %>
-                    </td>
-                    <td class="border px-4 py-2 text-center">
-                      <button type="button" onclick="bukaModalHapus('/delete-riwayat_perjalanan/<%= row.id %>')" class="bg-red-100 text-red-600 px-3 py-1 rounded-md hover:bg-red-200 text-xs font-semibold">Hapus</button>
-                    </td>
-                  </tr>
-                <% }) %>
-              <% } else { %>
-                <tr>
-                  <td colspan="6" class="text-center py-10 text-gray-500 italic">Belum ada data riwayat perjalanan.</td>
+            <!-- Tambahkan ID tableBody di tbody -->
+            <tbody id="tableBody">
+              <!-- CATATAN: Ganti 'riwayat' dengan nama variabel array dari server lu (misal 'logs' atau 'riwayat') -->
+              <% riwayat.forEach(log => { %>
+                <tr class="hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                  <td class="px-4 py-3 font-bold"><%= log.id %></td>
+                  <td class="px-4 py-3 font-medium text-blue-600"><%= log.user_name || 'User Tidak Dikenal' %></td>
+                  <td class="px-4 py-3">
+                    <span class="block font-medium"><%= log.start_location %></span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <span class="block font-medium"><%= log.end_location %></span>
+                  </td>
+                  <td class="px-4 py-3 text-gray-500"><%= log.date %></td>
+                  <td class="px-4 py-3 text-center">
+                    <button type="button" onclick="bukaModalHapus('<%= log.id %>')" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-md hover:bg-red-200 text-xs font-bold transition-colors">Hapus</button>
+                  </td>
                 </tr>
-              <% } %>
+              <% }) %>
             </tbody>
           </table>
         </div>
+
+        <!-- BAGIAN BARU: UI PAGINATION YANG MODERN & ELEGAN -->
+        <div class="flex flex-col sm:flex-row items-center justify-between border border-gray-200 bg-gray-50 px-4 py-3 rounded-b-lg">
+          
+          <!-- Rows per page selector -->
+          <div class="flex items-center space-x-2 text-sm text-gray-600 mb-3 sm:mb-0">
+            <span>Tampilkan</span>
+            <select id="rowsPerPage" onchange="changeRowsPerPage()" class="border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 py-1.5 pl-2 pr-6 bg-white outline-none cursor-pointer">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>
+            <span>baris</span>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="flex items-center space-x-4">
+            <span class="text-sm text-gray-600" id="pageInfo">
+              Menampilkan <span class="font-semibold text-gray-900" id="startRow">1</span> - <span class="font-semibold text-gray-900" id="endRow">10</span> dari <span class="font-semibold text-gray-900" id="totalRowsText">0</span>
+            </span>
+            
+            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+              <!-- Tombol Prev -->
+              <button id="prevBtn" onclick="prevPage()" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-100 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed bg-white transition-all">
+                <span class="sr-only">Previous</span>
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+              </button>
+              <!-- Tombol Next -->
+              <button id="nextBtn" onclick="nextPage()" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-100 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed bg-white transition-all">
+                <span class="sr-only">Next</span>
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+              </button>
+            </nav>
+          </div>
+        </div>
+        <!-- AKHIR UI PAGINATION -->
+
       </div>
     </main>
   </div>
 
-  <div id="modalHapus" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-    <div class="absolute inset-0 bg-gray-900 bg-opacity-40 backdrop-blur-sm" onclick="tutupModalHapus()"></div>
-    <div class="bg-white text-gray-800 rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6 relative z-10 border border-gray-200">
-      <div class="flex items-center space-x-3 text-red-600 mb-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-        </svg>
-        <h3 class="text-lg font-bold tracking-tight">Hapus Data Riwayat</h3>
-      </div>
-      <p class="text-gray-600 text-sm mb-6 leading-relaxed">
-        Apakah Anda yakin ingin menghapus data riwayat perjalanan ini secara permanen dari server?
-      </p>
-      <div class="flex space-x-3 justify-end text-sm font-semibold">
-        <button type="button" onclick="tutupModalHapus()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition border border-gray-200">Batal</button>
-        <a id="linkEksekusiHapus" href="#" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md shadow-red-200">Hapus Selamanya</a>
-      </div>
-    </div>
-  </div>
-
+  <!-- SCRIPT PAGINATION & SEARCH YANG SUDAH TERINTEGRASI -->
   <script>
-    function bukaModalHapus(urlDelete) {
-      document.getElementById("linkEksekusiHapus").href = urlDelete;
-      document.getElementById("modalHapus").classList.remove("hidden");
-    }
-    function tutupModalHapus() {
-      document.getElementById("modalHapus").classList.add("hidden");
-      document.getElementById("linkEksekusiHapus").href = "#";
+    let currentPage = 1;
+    let rowsPerPage = 10;
+    let allRows = [];
+    let filteredRows = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const tbody = document.getElementById("tableBody");
+      // Ambil semua baris data dari EJS saat pertama kali load
+      allRows = Array.from(tbody.getElementsByTagName("tr"));
+      filteredRows = [...allRows]; 
+      renderTable();
+    });
+
+    // Fungsi Render Pagination
+    function renderTable() {
+      const totalRows = filteredRows.length;
+      const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+
+      // Pastikan halaman saat ini valid
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const startIndex = (currentPage - 1) * rowsPerPage;
+      const endIndex = Math.min(startIndex + rowsPerPage, totalRows);
+
+      // Sembunyikan semua baris terlebih dahulu
+      allRows.forEach(row => row.style.display = "none");
+
+      // Tampilkan hanya baris sesuai halaman dan filter pencarian
+      for (let i = startIndex; i < endIndex; i++) {
+        if (filteredRows[i]) {
+          filteredRows[i].style.display = "";
+        }
+      }
+
+      updatePaginationUI(startIndex, endIndex, totalRows, totalPages);
     }
 
+    // Fungsi Update Teks & Tombol
+    function updatePaginationUI(start, end, total, totalPages) {
+      document.getElementById("startRow").innerText = total === 0 ? 0 : start + 1;
+      document.getElementById("endRow").innerText = end;
+      document.getElementById("totalRowsText").innerText = total;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+
+      // Matikan tombol kalau udah mentok
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = currentPage === totalPages || total === 0;
+    }
+
+    function nextPage() {
+      currentPage++;
+      renderTable();
+    }
+
+    function prevPage() {
+      currentPage--;
+      renderTable();
+    }
+
+    function changeRowsPerPage() {
+      const select = document.getElementById("rowsPerPage");
+      rowsPerPage = parseInt(select.value);
+      currentPage = 1; // Balik ke halaman 1 kalau jumlah baris diganti
+      renderTable();
+    }
+
+    // Fungsi Search yang disesuaikan dengan Pagination
     function searchTable() {
       const input = document.getElementById("searchInput");
       const clearBtn = document.getElementById("clearSearch");
       const filter = input.value.toLowerCase();
-      input.value.length > 0 ? clearBtn.classList.remove('hidden') : clearBtn.classList.add('hidden');
-      const table = document.querySelector("table tbody");
-      const tr = table.getElementsByTagName("tr");
-      for (let i = 0; i < tr.length; i++) {
-        if (tr[i].cells.length < 2) continue;
+      
+      if (input.value.length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      // Filter array berdasarkan pencarian
+      filteredRows = allRows.filter(row => {
         let match = false;
-        const td = tr[i].getElementsByTagName("td");
+        const td = row.getElementsByTagName("td");
         for (let j = 0; j < td.length; j++) {
           if (td[j]) {
             const textValue = td[j].textContent || td[j].innerText;
@@ -183,14 +217,23 @@
             }
           }
         }
-        tr[i].style.display = match ? "" : "none";
-      }
+        return match;
+      });
+
+      currentPage = 1; // Reset halaman setelah mencari
+      renderTable();
     }
+
     function clearInput() {
       const input = document.getElementById("searchInput");
       input.value = "";
       searchTable();
-      input.focus();
+      input.focus(); 
+    }
+
+    // Fungsi Modal Hapus (Biarkan sesuai kode awal lu)
+    function bukaModalHapus(id) {
+       // Logika hapus lu taruh sini
     }
   </script>
 </body>
