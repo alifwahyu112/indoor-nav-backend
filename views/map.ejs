@@ -42,18 +42,6 @@
         </div>
       </header>
 
-      <div class="bg-white p-6 rounded-lg shadow mb-8">
-        <h3 class="text-lg font-bold mb-4 text-gray-700">Tambah Titik Map Baru</h3>
-        <form action="/tambah-map" method="POST" class="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <input type="text" name="Floor_ID" placeholder="Floor ID (e.g. ground)" class="border p-2 rounded-md" required>
-          <input type="text" name="room_name" placeholder="Nama Ruangan" class="border p-2 rounded-md" required>
-          <input type="text" name="coordinates" placeholder="Koordinat (x,y,z)" class="border p-2 rounded-md" required>
-          <input type="text" name="room_id" placeholder="Room ID (Unique)" class="border p-2 rounded-md" required>
-          <input type="text" name="bim_image" placeholder="Link URL Denah BIM (Optional)" class="border p-2 rounded-md">
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-bold transition">Tambah</button>
-        </form>
-      </div>
-
       <div class="bg-white p-6 rounded-lg shadow mb-10">
         <h3 class="text-2xl font-semibold mb-4">Daftar Data Map</h3>
         <div class="overflow-x-auto">
@@ -105,7 +93,6 @@
     </main>
   </div>
 
-  <!-- Modal Edit -->
   <div id="editModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden overflow-y-auto h-full w-full z-50 flex justify-center items-center">
     <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md mx-4 transform transition-all">
       <div class="flex justify-between items-center mb-6">
@@ -142,7 +129,6 @@
     </div>
   </div>
 
-  <!-- Modal Hapus -->
   <div id="modalHapus" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-gray-900 bg-opacity-40 backdrop-blur-sm" onclick="tutupModalHapus()"></div>
     <div class="bg-white text-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6 relative z-10 border border-gray-200">
@@ -209,7 +195,7 @@
       if (textInput.trim() === roomIdTargetPencocokan) {
         btnHapus.classList.remove("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
         btnHapus.classList.add("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md", "shadow-red-200");
-        btnHapus.href = /delete-map/ + mapIdYangAkanDihapus;
+        btnHapus.href = '/delete-map/' + mapIdYangAkanDihapus;
       } else {
         btnHapus.classList.remove("bg-red-600", "text-white", "hover:bg-red-700", "shadow-md", "shadow-red-200");
         btnHapus.classList.add("bg-gray-200", "text-gray-400", "pointer-events-none", "cursor-not-allowed");
