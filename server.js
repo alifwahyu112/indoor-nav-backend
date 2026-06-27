@@ -355,6 +355,59 @@ app.post("/api/login", (req, res) => {
     });
 });
 
+// ==========================================
+// TAMBAHAN API LUPA PASSWORD KHUSUS UNITY
+// ==========================================
+
+const unityOtpMemory = new Map(); // Penyimpanan sementara OTP di memori server
+
+app.post("/api/forgot-password", (req, res) => {
+  const { email } = req.body;
+  
+  db.query("SELECT * FROM user WHERE gmail = ?", [email], (err, result) => {
+    if (err || result.length === 0) {
+      return res.json({ status: false, message: "Email tidak terdaftar di aplikasi!" });
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    unityOtpMemory.set(email, { otp: otpCode, expires: Date.now() + 300000 }); // Expire 5 menit
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Kode OTP Reset Password - Indoor Navigasi",
+      text: `Halo! Kode verifikasi OTP pemulihan kata sandi aplikasi Anda adalah: ${otpCode}. Berlaku selama 5 menit.`
+    };
+
+    transporter.sendMail(mailOptions, (error) => {
+      if (error) return res.json({ status: false, message: "Gagal kirim email: " + error.message });
+      res.json({ status: true, message: "OTP berhasil dikirim!" });
+    });
+  });
+});
+
+app.post("/api/reset-password", async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  const data = unityOtpMemory.get(email);
+
+  if (!data || data.otp !== otp || Date.now() > data.expires) {
+    return res.json({ status: false, message: "Kode OTP salah atau kadaluwarsa!" });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    db.query("UPDATE user SET password = ? WHERE gmail = ?", [hashedPassword, email], (err) => {
+      if (err) return res.json({ status: false, message: "Database error" });
+      unityOtpMemory.delete(email); // Hapus OTP setelah terpakai
+      res.json({ status: true, message: "Password berhasil diubah!" });
+    });
+  } catch (e) {
+    res.json({ status: false, message: "Server error" });
+  }
+});
+
+// ==========================================
+
 app.get("/api/get-room-list", (req, res) => {
   db.query("SELECT room_id, room_name FROM map ORDER BY room_name ASC", (err, result) => {
     if (err) return res.json({ status: false });
