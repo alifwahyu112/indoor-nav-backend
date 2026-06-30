@@ -2,47 +2,59 @@ const express = require("express");
 const mysql = require("mysql2");
 const session = require("express-session");
 const path = require("path");
-const cors = require('cors');
-const bcrypt = require('bcrypt'); 
-const nodemailer = require("nodemailer"); 
-require('dotenv').config();
+const cors = require("cors");
+const bcrypt = require("bcrypt");
+const nodemailer = require("nodemailer");
+require("dotenv").config();
 
 // Panggil modul express-mysql-session
-const MySQLStore = require('express-mysql-session')(session);
+const MySQLStore = require("express-mysql-session")(session);
 
 const app = express();
-const saltRounds = 10; 
+const saltRounds = 10;
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
-app.set('trust proxy', 1); 
+app.set("trust proxy", 1);
+
+const useSsl = ['1', 'true', 'yes'].includes(
+  (process.env.DB_SSL || '').toLowerCase(),
+);
+const sslConfig = useSsl
+  ? {
+      minVersion: 'TLSv1.2',
+      rejectUnauthorized: false,
+    }
+  : undefined;
 
 // 1. PINDAHKAN KONEKSI DATABASE KE ATAS SINI
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME, 
-  port: process.env.DB_PORT || 4000,
-  ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
+  database: process.env.DB_NAME,
+  port: Number(process.env.DB_PORT) || 4000,
+  ssl: sslConfig,
   waitForConnections: true,
-  connectionLimit: 10
+  connectionLimit: 10,
 });
 
 // 2. BUAT SESSION STORE MENGGUNAKAN DATABASE
 const sessionStore = new MySQLStore({}, db);
 
 // 3. MASUKKAN STORE KE DALAM PENGATURAN SESSION
-app.use(session({
-  secret: process.env.SESSION_SECRET || "secret-key",
-  store: sessionStore, // <-- BIAR LOGIN ADMIN AMAN DI VERCEL
-  resave: false,
-  saveUninitialized: false, 
-  cookie: { secure: process.env.NODE_ENV === 'production' } 
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "secret-key",
+    store: sessionStore, // <-- BIAR LOGIN ADMIN AMAN DI VERCEL
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: process.env.NODE_ENV === "production" },
+  }),
+);
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -50,14 +62,14 @@ app.set("views", path.join(__dirname, "views"));
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 465,
-  secure: true, 
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS  
+    pass: process.env.EMAIL_PASS,
   },
   tls: {
-    rejectUnauthorized: false 
-  }
+    rejectUnauthorized: false,
+  },
 });
 
 app.get("/", (req, res) => {
@@ -70,24 +82,29 @@ app.get("/", (req, res) => {
 
 app.get("/delete-user/:id", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  db.query("DELETE FROM user WHERE id = ?", [req.params.id], err => {
+  db.query("DELETE FROM user WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send(err.message);
-    res.redirect("/"); 
+    res.redirect("/");
   });
 });
 
 app.post("/tambah", async (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  
+
   const { username, password, gmail, mobile_number, BPJS_number } = req.body;
-  
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const sql = `INSERT INTO user (username, password, gmail, mobile_number, BPJS_number) VALUES (?, ?, ?, ?, ?)`;
-    db.query(sql, [username, hashedPassword, gmail, mobile_number, BPJS_number], err => {
-      if (err) return res.status(500).send("Gagal menambah user: " + err.message);
-      res.redirect("/"); 
-    });
+    db.query(
+      sql,
+      [username, hashedPassword, gmail, mobile_number, BPJS_number],
+      (err) => {
+        if (err)
+          return res.status(500).send("Gagal menambah user: " + err.message);
+        res.redirect("/");
+      },
+    );
   } catch (error) {
     res.status(500).send("Error saat melakukan enkripsi password");
   }
@@ -98,18 +115,23 @@ app.get("/login", (req, res) => res.render("login", { title: "Login Admin" }));
 
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  db.query("SELECT * FROM admin WHERE username = ?", [username], async (err, result) => {
-    if (err) return res.status(500).send("Database Error");
-    if (result.length === 0) return res.send("❌ Login gagal! Username tidak ditemukan.");
-    
-    const match = await bcrypt.compare(password, result[0].password); 
-    if (match) {
-      req.session.loggedIn = true;
-      res.redirect("/riwayat_perjalanan");
-    } else {
-      res.send("❌ Login gagal! Password salah.");
-    }
-  });
+  db.query(
+    "SELECT * FROM admin WHERE username = ?",
+    [username],
+    async (err, result) => {
+      if (err) return res.status(500).send("Database Error");
+      if (result.length === 0)
+        return res.send("❌ Login gagal! Username tidak ditemukan.");
+
+      const match = await bcrypt.compare(password, result[0].password);
+      if (match) {
+        req.session.loggedIn = true;
+        res.redirect("/riwayat_perjalanan");
+      } else {
+        res.send("❌ Login gagal! Password salah.");
+      }
+    },
+  );
 });
 
 app.get("/forgot-password", (req, res) => {
@@ -119,23 +141,32 @@ app.get("/forgot-password", (req, res) => {
 app.post("/forgot-password", (req, res) => {
   const { username, email } = req.body;
 
-  db.query("SELECT * FROM admin WHERE username = ? AND email = ?", [username, email], async (err, result) => {
-    if (err) return res.status(500).render("forgot-password", { error: "Database Error" });
-    
-    if (result.length === 0) {
-      return res.render("forgot-password", { error: "❌ Kombinasi Username dan Email Admin tidak cocok atau tidak terdaftar!" });
-    }
+  db.query(
+    "SELECT * FROM admin WHERE username = ? AND email = ?",
+    [username, email],
+    async (err, result) => {
+      if (err)
+        return res
+          .status(500)
+          .render("forgot-password", { error: "Database Error" });
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    req.session.resetEmail = email;
-    req.session.resetOTP = otpCode;
+      if (result.length === 0) {
+        return res.render("forgot-password", {
+          error:
+            "❌ Kombinasi Username dan Email Admin tidak cocok atau tidak terdaftar!",
+        });
+      }
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Kode PIN Verifikasi Reset Password Admin",
-      html: `
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+      req.session.resetEmail = email;
+      req.session.resetOTP = otpCode;
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Kode PIN Verifikasi Reset Password Admin",
+        html: `
         <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; max-w: 500px;">
           <h2 style="color: #2563eb;">Verifikasi Reset Password</h2>
           <p>Halo <b>${username}</b>, Anda menerima email ini karena ada permintaan pemulihan kata sandi akun dashboard.</p>
@@ -144,17 +175,20 @@ app.post("/forgot-password", (req, res) => {
             ${otpCode}
           </div>
         </div>
-      `
-    };
+      `,
+      };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error Nodemailer Terdeteksi:", error);
-        return res.render("forgot-password", { error: `❌ Detail Error Google: ${error.message}` });
-      }
-      res.redirect("/verify-otp");
-    });
-  });
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error("Error Nodemailer Terdeteksi:", error);
+          return res.render("forgot-password", {
+            error: `❌ Detail Error Google: ${error.message}`,
+          });
+        }
+        res.redirect("/verify-otp");
+      });
+    },
+  );
 });
 
 app.get("/verify-otp", (req, res) => {
@@ -165,10 +199,12 @@ app.get("/verify-otp", (req, res) => {
 app.post("/verify-otp", (req, res) => {
   const { otp } = req.body;
   if (otp && otp.trim() === req.session.resetOTP) {
-    req.session.otpVerified = true; 
+    req.session.otpVerified = true;
     res.redirect("/reset-password");
   } else {
-    res.render("verify-otp", { error: "❌ Kode PIN salah atau kadaluwarsa! Periksa kembali email Anda." });
+    res.render("verify-otp", {
+      error: "❌ Kode PIN salah atau kadaluwarsa! Periksa kembali email Anda.",
+    });
   }
 });
 
@@ -182,7 +218,9 @@ app.post("/reset-password", async (req, res) => {
   const { password, confirmPassword } = req.body;
 
   if (password !== confirmPassword) {
-    return res.render("reset-password", { error: "❌ Konfirmasi password tidak cocok!" });
+    return res.render("reset-password", {
+      error: "❌ Konfirmasi password tidak cocok!",
+    });
   }
 
   try {
@@ -190,53 +228,86 @@ app.post("/reset-password", async (req, res) => {
     const sql = "UPDATE admin SET password = ? WHERE email = ?";
 
     db.query(sql, [hashedPassword, req.session.resetEmail], (err) => {
-      if (err) return res.status(500).render("reset-password", { error: "Gagal memperbarui database." });
-      
+      if (err)
+        return res
+          .status(500)
+          .render("reset-password", { error: "Gagal memperbarui database." });
+
       req.session.destroy(() => {
-        res.send("<script>alert('✅ Password admin berhasil diperbarui! Silakan login kembali.'); window.location.href='/login';</script>");
+        res.send(
+          "<script>alert('✅ Password admin berhasil diperbarui! Silakan login kembali.'); window.location.href='/login';</script>",
+        );
       });
     });
   } catch (error) {
-    res.status(500).render("reset-password", { error: "Error enkripsi password." });
+    res
+      .status(500)
+      .render("reset-password", { error: "Error enkripsi password." });
   }
 });
 
 // --- RIWAYAT PERJALANAN (KEMBALI KE VERSI SIMPEL) ---
 app.get("/riwayat_perjalanan", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  
-  db.query("SELECT * FROM riwayat_perjalanan ORDER BY tanggal DESC", (err, result) => {
-    if (err) return res.status(500).send(err.message);
-    res.render("riwayat_perjalanan", { title: "DATA RIWAYAT", riwayat_perjalanans: result });
-  });
+
+  db.query(
+    "SELECT * FROM riwayat_perjalanan ORDER BY tanggal DESC",
+    (err, result) => {
+      if (err) return res.status(500).send(err.message);
+      res.render("riwayat_perjalanan", {
+        title: "DATA RIWAYAT",
+        riwayat_perjalanans: result,
+      });
+    },
+  );
 });
 
 app.post("/tambah-riwayat_perjalanan", (req, res) => {
   const { user_id, mulai, tujuan, koordinat_awal } = req.body;
-  
+
   const waktuServer = new Date();
   waktuServer.setHours(waktuServer.getHours() + 7);
 
-  db.query("SELECT coordinates FROM map WHERE room_name = ?", [tujuan], (errMap, resultsMap) => {
-    let koordinat_tujuan = "-";
-    if (!errMap && resultsMap.length > 0) {
-      koordinat_tujuan = resultsMap[0].coordinates;
-    }
+  db.query(
+    "SELECT coordinates FROM map WHERE room_name = ?",
+    [tujuan],
+    (errMap, resultsMap) => {
+      let koordinat_tujuan = "-";
+      if (!errMap && resultsMap.length > 0) {
+        koordinat_tujuan = resultsMap[0].coordinates;
+      }
 
-    const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    db.query(sql, [user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, waktuServer, tujuan], err => {
-      if (err) return res.status(500).send(err.message);
-      res.redirect("/riwayat_perjalanan");
-    });
-  });
+      const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      db.query(
+        sql,
+        [
+          user_id,
+          mulai,
+          tujuan,
+          koordinat_awal,
+          koordinat_tujuan,
+          waktuServer,
+          tujuan,
+        ],
+        (err) => {
+          if (err) return res.status(500).send(err.message);
+          res.redirect("/riwayat_perjalanan");
+        },
+      );
+    },
+  );
 });
 
 app.get("/delete-riwayat_perjalanan/:id", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  db.query("DELETE FROM riwayat_perjalanan WHERE id = ?", [req.params.id], err => {
-    if (err) return res.status(500).send(err.message);
-    res.redirect("/riwayat_perjalanan");
-  });
+  db.query(
+    "DELETE FROM riwayat_perjalanan WHERE id = ?",
+    [req.params.id],
+    (err) => {
+      if (err) return res.status(500).send(err.message);
+      res.redirect("/riwayat_perjalanan");
+    },
+  );
 });
 
 // --- MAP ---
@@ -250,31 +321,69 @@ app.get("/map", (req, res) => {
 
 app.get("/viewer", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  const modelUrl = req.query.model; 
+  const modelUrl = req.query.model;
   res.render("viewer3d", { title: "BIM 3D Viewer", modelUrl: modelUrl });
 });
 
 app.post("/tambah-map", (req, res) => {
-  const { Floor_ID, room_name, coordinates, room_id, bim_image } = req.body; 
-  const sql = `INSERT INTO map (Floor_ID, room_name, coordinates, room_id, bim_image) VALUES (?, ?, ?, ?, ?)`; 
-  db.query(sql, [Floor_ID, room_name, coordinates, room_id, bim_image], err => { 
-    if (err) return res.status(500).send(err.message);
-    res.redirect("/map");
-  });
+  const {
+    Floor_ID,
+    room_name,
+    coordinates_unity,
+    coordinates,
+    room_id,
+    bim_image,
+  } = req.body;
+  const sql = `INSERT INTO map (Floor_ID, room_name, coordinates_unity, coordinates, room_id, bim_image) VALUES (?, ?, ?, ?, ?, ?)`;
+  db.query(
+    sql,
+    [
+      Floor_ID,
+      room_name,
+      coordinates_unity,
+      coordinates || null,
+      room_id,
+      bim_image,
+    ],
+    (err) => {
+      if (err) return res.status(500).send(err.message);
+      res.redirect("/map");
+    },
+  );
 });
 
 app.post("/update-map", (req, res) => {
-  const { id_map, Floor_ID, room_name, coordinates, room_id, bim_image } = req.body; 
-  const sql = `UPDATE map SET Floor_ID = ?, room_name = ?, coordinates = ?, room_id = ?, bim_image = ? WHERE id_map = ?`; 
-  db.query(sql, [Floor_ID, room_name, coordinates, room_id, bim_image, id_map], err => { 
-    if (err) return res.status(500).send("Gagal update: " + err.message);
-    res.redirect("/map");
-  });
+  const {
+    id_map,
+    Floor_ID,
+    room_name,
+    coordinates_unity,
+    coordinates,
+    room_id,
+    bim_image,
+  } = req.body;
+  const sql = `UPDATE map SET Floor_ID = ?, room_name = ?, coordinates_unity = ?, coordinates = ?, room_id = ?, bim_image = ? WHERE id_map = ?`;
+  db.query(
+    sql,
+    [
+      Floor_ID,
+      room_name,
+      coordinates_unity,
+      coordinates || null,
+      room_id,
+      bim_image,
+      id_map,
+    ],
+    (err) => {
+      if (err) return res.status(500).send("Gagal update: " + err.message);
+      res.redirect("/map");
+    },
+  );
 });
 
 app.get("/delete-map/:id", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  db.query("DELETE FROM map WHERE id_map = ?", [req.params.id], err => {
+  db.query("DELETE FROM map WHERE id_map = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send(err.message);
     res.redirect("/map");
   });
@@ -282,16 +391,16 @@ app.get("/delete-map/:id", (req, res) => {
 
 // --- ADMIN ---
 app.get("/admin", (req, res) => {
-    if (!req.session.loggedIn) return res.redirect("/login");
-    db.query("SELECT * FROM admin", (err, adminResult) => {
-        if (err) return res.status(500).send("Database Error");
-        res.render("admin", { title: "DATA ADMIN", admins: adminResult });
-    });
+  if (!req.session.loggedIn) return res.redirect("/login");
+  db.query("SELECT * FROM admin", (err, adminResult) => {
+    if (err) return res.status(500).send("Database Error");
+    res.render("admin", { title: "DATA ADMIN", admins: adminResult });
+  });
 });
 
 app.get("/delete-admin/:id", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  db.query("DELETE FROM admin WHERE id = ?", [req.params.id], err => {
+  db.query("DELETE FROM admin WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send(err.message);
     res.redirect("/admin");
   });
@@ -299,13 +408,13 @@ app.get("/delete-admin/:id", (req, res) => {
 
 app.post("/tambah-admin", async (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  const { username, email, password } = req.body; 
-  
+  const { username, email, password } = req.body;
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const sql = `INSERT INTO admin (username, email, password) VALUES (?, ?, ?)`;
 
-    db.query(sql, [username, email, hashedPassword], err => {
+    db.query(sql, [username, email, hashedPassword], (err) => {
       if (err) {
         console.error("Error SQL Tambah Admin:", err.message);
         return res.status(500).send("Gagal menambah admin: " + err.message);
@@ -330,29 +439,38 @@ app.post("/api/register", async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const sql = `INSERT INTO user (username, password, gmail, mobile_number, BPJS_number) VALUES (?, ?, ?, ?, ?)`;
-    
-    db.query(sql, [username, hashedPassword, gmail, mobile_number, BPJS_number], err => {
-      if (err) {
-        return res.json({ status: false, error: err.message });
-      }
-      res.json({ status: true, message: "Akun Unity berhasil dibuat!" });
-    });
+
+    db.query(
+      sql,
+      [username, hashedPassword, gmail, mobile_number, BPJS_number],
+      (err) => {
+        if (err) {
+          return res.json({ status: false, error: err.message });
+        }
+        res.json({ status: true, message: "Akun Unity berhasil dibuat!" });
+      },
+    );
   } catch (error) {
     res.json({ status: false, error: "Error server: " + error.message });
   }
 });
 
 app.post("/api/login", (req, res) => {
-    const { email, password } = req.body;
-    db.query("SELECT * FROM user WHERE gmail = ?", [email], async (err, result) => {
-        if (err || result.length === 0) return res.json({ status: false, message: "User tidak ditemukan" });
-        const match = await bcrypt.compare(password, result[0].password);
-        if (match) {
-            res.json({ status: true, user_id: result[0].id });
-        } else {
-            res.json({ status: false, message: "Password salah" });
-        }
-    });
+  const { email, password } = req.body;
+  db.query(
+    "SELECT * FROM user WHERE gmail = ?",
+    [email],
+    async (err, result) => {
+      if (err || result.length === 0)
+        return res.json({ status: false, message: "User tidak ditemukan" });
+      const match = await bcrypt.compare(password, result[0].password);
+      if (match) {
+        res.json({ status: true, user_id: result[0].id });
+      } else {
+        res.json({ status: false, message: "Password salah" });
+      }
+    },
+  );
 });
 
 // ==========================================
@@ -363,10 +481,13 @@ const unityOtpMemory = new Map(); // Penyimpanan sementara OTP di memori server
 
 app.post("/api/forgot-password", (req, res) => {
   const { email } = req.body;
-  
+
   db.query("SELECT * FROM user WHERE gmail = ?", [email], (err, result) => {
     if (err || result.length === 0) {
-      return res.json({ status: false, message: "Email tidak terdaftar di aplikasi!" });
+      return res.json({
+        status: false,
+        message: "Email tidak terdaftar di aplikasi!",
+      });
     }
 
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -376,11 +497,15 @@ app.post("/api/forgot-password", (req, res) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Kode OTP Reset Password - Indoor Navigasi",
-      text: `Halo! Kode verifikasi OTP pemulihan kata sandi aplikasi Anda adalah: ${otpCode}. Berlaku selama 5 menit.`
+      text: `Halo! Kode verifikasi OTP pemulihan kata sandi aplikasi Anda adalah: ${otpCode}. Berlaku selama 5 menit.`,
     };
 
     transporter.sendMail(mailOptions, (error) => {
-      if (error) return res.json({ status: false, message: "Gagal kirim email: " + error.message });
+      if (error)
+        return res.json({
+          status: false,
+          message: "Gagal kirim email: " + error.message,
+        });
       res.json({ status: true, message: "OTP berhasil dikirim!" });
     });
   });
@@ -391,16 +516,23 @@ app.post("/api/reset-password", async (req, res) => {
   const data = unityOtpMemory.get(email);
 
   if (!data || data.otp !== otp || Date.now() > data.expires) {
-    return res.json({ status: false, message: "Kode OTP salah atau kadaluwarsa!" });
+    return res.json({
+      status: false,
+      message: "Kode OTP salah atau kadaluwarsa!",
+    });
   }
 
   try {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    db.query("UPDATE user SET password = ? WHERE gmail = ?", [hashedPassword, email], (err) => {
-      if (err) return res.json({ status: false, message: "Database error" });
-      unityOtpMemory.delete(email); // Hapus OTP setelah terpakai
-      res.json({ status: true, message: "Password berhasil diubah!" });
-    });
+    db.query(
+      "UPDATE user SET password = ? WHERE gmail = ?",
+      [hashedPassword, email],
+      (err) => {
+        if (err) return res.json({ status: false, message: "Database error" });
+        unityOtpMemory.delete(email); // Hapus OTP setelah terpakai
+        res.json({ status: true, message: "Password berhasil diubah!" });
+      },
+    );
   } catch (e) {
     res.json({ status: false, message: "Server error" });
   }
@@ -409,43 +541,69 @@ app.post("/api/reset-password", async (req, res) => {
 // ==========================================
 
 app.get("/api/get-room-list", (req, res) => {
-  db.query("SELECT room_id, room_name FROM map ORDER BY room_name ASC", (err, result) => {
-    if (err) return res.json({ status: false });
-    res.json({ status: true, data: result });
-  });
+  db.query(
+    "SELECT room_id, room_name FROM map ORDER BY room_name ASC",
+    (err, result) => {
+      if (err) return res.json({ status: false });
+      res.json({ status: true, data: result });
+    },
+  );
 });
 
 app.get("/api/map/:id", (req, res) => {
-  db.query("SELECT * FROM map WHERE room_id = ?", [req.params.id], (err, result) => {
-    if (err || result.length === 0) return res.status(404).json({ status: false });
-    res.json(result[0]);
-  });
+  db.query(
+    "SELECT * FROM map WHERE room_id = ?",
+    [req.params.id],
+    (err, result) => {
+      if (err || result.length === 0)
+        return res.status(404).json({ status: false });
+      res.json(result[0]);
+    },
+  );
 });
 
 app.post("/api/save-history", (req, res) => {
   const { user_id, mulai, tujuan, koordinat_awal } = req.body;
-  
+
   const waktuServer = new Date();
   waktuServer.setHours(waktuServer.getHours() + 7);
-  
-  db.query("SELECT coordinates FROM map WHERE room_name = ?", [tujuan], (errMap, resultsMap) => {
-    
-    let koordinat_tujuan_asli = "-"; 
-    
-    if (!errMap && resultsMap.length > 0) {
-      koordinat_tujuan_asli = resultsMap[0].coordinates;
-    }
 
-    const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    
-    db.query(sql, [user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan_asli, waktuServer, tujuan], (err) => {
-      if (err) {
-        console.error("❌ SQL Error Simpan Riwayat:", err.message);
-        return res.json({ status: false, error: err.message });
+  db.query(
+    "SELECT coordinates FROM map WHERE room_name = ?",
+    [tujuan],
+    (errMap, resultsMap) => {
+      let koordinat_tujuan_asli = "-";
+
+      if (!errMap && resultsMap.length > 0) {
+        koordinat_tujuan_asli = resultsMap[0].coordinates;
       }
-      res.json({ status: true, message: "History saved successfully gles!" });
-    });
-  });
+
+      const sql = `INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+      db.query(
+        sql,
+        [
+          user_id,
+          mulai,
+          tujuan,
+          koordinat_awal,
+          koordinat_tujuan_asli,
+          waktuServer,
+          tujuan,
+        ],
+        (err) => {
+          if (err) {
+            console.error("❌ SQL Error Simpan Riwayat:", err.message);
+            return res.json({ status: false, error: err.message });
+          }
+          res.json({
+            status: true,
+            message: "History saved successfully gles!",
+          });
+        },
+      );
+    },
+  );
 });
 
 // ==========================================

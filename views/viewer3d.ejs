@@ -71,27 +71,15 @@
       return null;
     }
 
-    // Konversi koordinat Unity ke koordinat xeokit
-    // AABB xeokit: X[-16.84 ~ 50.19], Y[-0.02 ~ 5.33], Z[-84.96 ~ 0.06]
-    // Koordinat Unity range: X[-100 ~ 0], Z[-100 ~ 0]
-    function unityToXeokit(ux, uy, uz) {
-      // Range Unity (berdasarkan data koordinat di database)
-      const unityMinX = -100, unityMaxX = 0;
-      const unityMinZ = -100, unityMaxZ = 0;
-
-      // Range xeokit (dari AABB model)
-      const xeoMinX = -16.84, xeoMaxX = 50.19;
-      const xeoMinZ = -84.96, xeoMaxZ = 0.06;
-      const xeoMidY = 2.65; // center Y model
-
-      // Normalisasi Unity ke 0-1 lalu map ke xeokit
-      const ratioX = (ux - unityMinX) / (unityMaxX - unityMinX);
-      const ratioZ = (uz - unityMinZ) / (unityMaxZ - unityMinZ);
-
-      const xeoX = xeoMinX + ratioX * (xeoMaxX - xeoMinX);
-      const xeoZ = xeoMinZ + ratioZ * (xeoMaxZ - xeoMinZ);
-
-      return { x: xeoX, y: xeoMidY, z: xeoZ };
+    // Konversi koordinat SketchUp (inch) ke xeokit (meter)
+    // SketchUp default: inch, IFC export: mm (×25.4), xeokit: m (/1000) → net: ×0.0254
+    // Axis: xeokit X = IFC X, xeokit Y = IFC Z, xeokit Z = -IFC Y
+    function sketchupToXeokit(sx, sy, sz) {
+      return {
+        x: sx * 0.0254,
+        y: sz * 0.0254,
+        z: -(sy * 0.0254)
+      };
     }
 
     try {
@@ -103,9 +91,10 @@ window._viewer = viewer; // ekspos ke global untuk debug
         loadingEl.innerText = "❌ File BIM tidak ditemukan!";
         loadingEl.style.color = "red";
       } else {
+        const modelPath = urlModel.endsWith('.xkt') ? urlModel : `/models/${urlModel}.xkt`;
         const model = xktLoader.load({
           id: "BIM_MODEL",
-          src: urlModel,
+          src: modelPath,
           edges: false
         });
 
@@ -116,7 +105,7 @@ window._viewer = viewer; // ekspos ke global untuk debug
 
           if (coords) {
             // Konversi koordinat Unity ke xeokit
-            const target = unityToXeokit(coords.x, coords.y, coords.z);
+            const target = sketchupToXeokit(coords.x, coords.y, coords.z);
 
             console.log("Unity coords:", coords);
             console.log("Xeokit target:", target);
