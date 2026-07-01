@@ -74,7 +74,7 @@ const transporter = nodemailer.createTransport({
 
 app.get("/", (req, res) => {
   if (!req.session.loggedIn) return res.redirect("/login");
-  db.query("SELECT * FROM user", (err, usersResult) => {
+  db.query("SELECT * FROM user ORDER BY id DESC", (err, usersResult) => {
     if (err) return res.status(500).send("Database Error");
     res.render("index", { title: "DATA USER", users: usersResult });
   });
