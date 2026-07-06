@@ -52,32 +52,33 @@
             Tambah Admin
           </button>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full border-collapse border border-gray-200 text-sm">
+
+        <div class="overflow-x-auto rounded-t-lg border border-gray-200 border-b-0">
+          <table class="w-full border-collapse text-sm">
             <thead>
-              <tr class="bg-blue-50 text-left text-gray-700">
-                <th class="border px-4 py-2 w-10">ID</th>
-                <th class="border px-4 py-2">Username</th>
-                <th class="border px-4 py-2">Email</th>
-                <th class="border px-4 py-2">Password</th>
-                <th class="border px-4 py-2 text-center w-24">Aksi</th>
+              <tr class="bg-blue-50 text-left text-gray-700 border-b border-gray-200">
+                <th class="px-4 py-3 font-semibold text-gray-700 w-10">ID</th>
+                <th class="px-4 py-3 font-semibold text-gray-700">Username</th>
+                <th class="px-4 py-3 font-semibold text-gray-700">Email</th>
+                <th class="px-4 py-3 font-semibold text-gray-700">Password</th>
+                <th class="px-4 py-3 font-semibold text-gray-700 text-center w-24">Aksi</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="tableBody">
               <% if (admins && admins.length > 0) { %>
                 <% admins.forEach(admin => { %>
-                  <tr class="hover:bg-gray-50 transition">
-                    <td class="border px-4 py-2 text-center font-bold"><%= admin.id %></td>
-                    <td class="border px-4 py-2 font-medium"><%= admin.username %></td>
-                    <td class="border px-4 py-2 text-gray-600"><%= admin.email || '-' %></td>
-                    <td class="border px-4 py-2">******</td>
-                    <td class="border px-4 py-2 text-center">
+                  <tr class="data-row hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                    <td class="px-4 py-3 text-center font-bold"><%= admin.id %></td>
+                    <td class="px-4 py-3 font-medium"><%= admin.username %></td>
+                    <td class="px-4 py-3 text-gray-600"><%= admin.email || '-' %></td>
+                    <td class="px-4 py-3">******</td>
+                    <td class="px-4 py-3 text-center">
                       <button type="button" onclick="bukaModalHapus('<%= admin.id %>', '<%= admin.username %>')" class="text-red-500 hover:underline font-medium">Hapus</button>
                     </td>
                   </tr>
                 <% }) %>
               <% } else { %>
-                <tr>
+                <tr class="empty-row">
                   <td colspan="5" class="text-center py-8 text-gray-500">
                     <p class="text-lg">📂 Belum ada data admin.</p>
                   </td>
@@ -85,6 +86,36 @@
               <% } %>
             </tbody>
           </table>
+        </div>
+
+        <!-- PAGINATION UI -->
+        <div class="flex flex-col sm:flex-row items-center justify-between border border-gray-200 bg-gray-50 px-4 py-3 rounded-b-lg">
+          <div class="flex items-center space-x-2 text-sm text-gray-600 mb-3 sm:mb-0">
+            <span>Tampilkan</span>
+            <select id="rowsPerPage" onchange="changeRowsPerPage()" class="border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 py-1.5 pl-2 pr-6 bg-white outline-none cursor-pointer">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>
+            <span>baris</span>
+          </div>
+
+          <div class="flex items-center space-x-4">
+            <span class="text-sm text-gray-600" id="pageInfo">
+              Menampilkan <span class="font-semibold text-gray-900" id="startRow">0</span> - <span class="font-semibold text-gray-900" id="endRow">0</span> dari <span class="font-semibold text-gray-900" id="totalRowsText">0</span>
+            </span>
+            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+              <button id="prevBtn" onclick="prevPage()" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-100 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed bg-white transition-all">
+                <span class="sr-only">Previous</span>
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+              </button>
+              <button id="nextBtn" onclick="nextPage()" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-100 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed bg-white transition-all">
+                <span class="sr-only">Next</span>
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+              </button>
+            </nav>
+          </div>
         </div>
       </div>
     </main>
@@ -158,7 +189,7 @@
       document.body.style.overflow = 'auto'; 
     }
 
-    // FUNGSI MODAL HAPUS & SEARCH
+    // FUNGSI MODAL HAPUS
     let adminIdYangAkanDihapus = null;
 
     function bukaModalHapus(id, username) {
@@ -193,27 +224,88 @@
       }
     }
 
+    // --- SCRIPT PAGINATION & SEARCH BARU ---
+    let currentPage = 1;
+    let rowsPerPage = 10;
+    let allRows = [];
+    let filteredRows = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const tbody = document.getElementById("tableBody");
+      if(tbody){
+        allRows = Array.from(tbody.getElementsByClassName("data-row"));
+        filteredRows = [...allRows]; 
+        renderTable();
+      }
+    });
+
+    function renderTable() {
+      const totalRows = filteredRows.length;
+      const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const startIndex = (currentPage - 1) * rowsPerPage;
+      const endIndex = Math.min(startIndex + rowsPerPage, totalRows);
+
+      allRows.forEach(row => row.style.display = "none");
+
+      for (let i = startIndex; i < endIndex; i++) {
+        if (filteredRows[i]) {
+          filteredRows[i].style.display = "";
+        }
+      }
+
+      updatePaginationUI(startIndex, endIndex, totalRows, totalPages);
+    }
+
+    function updatePaginationUI(start, end, total, totalPages) {
+      document.getElementById("startRow").innerText = total === 0 ? 0 : start + 1;
+      document.getElementById("endRow").innerText = end;
+      document.getElementById("totalRowsText").innerText = total;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = currentPage === totalPages || total === 0;
+    }
+
+    function nextPage() { currentPage++; renderTable(); }
+    function prevPage() { currentPage--; renderTable(); }
+    
+    function changeRowsPerPage() {
+      const select = document.getElementById("rowsPerPage");
+      rowsPerPage = parseInt(select.value);
+      currentPage = 1; 
+      renderTable();
+    }
+
     function searchTable() {
       const input = document.getElementById("searchInput");
       const clearBtn = document.getElementById("clearSearch");
       const filter = input.value.toLowerCase();
-      if (input.value.length > 0) { clearBtn.classList.remove('hidden'); } else { clearBtn.classList.add('hidden'); }
-      const table = document.querySelector("table tbody");
-      const tr = table.getElementsByTagName("tr");
-      for (let i = 0; i < tr.length; i++) {
-        if (tr[i].cells.length < 2) continue;
+      
+      input.value.length > 0 ? clearBtn.classList.remove('hidden') : clearBtn.classList.add('hidden');
+
+      filteredRows = allRows.filter(row => {
         let match = false;
-        const td = tr[i].getElementsByTagName("td");
+        const td = row.getElementsByTagName("td");
         for (let j = 0; j < td.length; j++) {
           if (td[j]) {
             const textValue = td[j].textContent || td[j].innerText;
             if (textValue.toLowerCase().indexOf(filter) > -1) {
-              match = true; break;
+              match = true; 
+              break;
             }
           }
         }
-        tr[i].style.display = match ? "" : "none";
-      }
+        return match;
+      });
+
+      currentPage = 1; 
+      renderTable();
     }
 
     function clearInput() {
