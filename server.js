@@ -158,6 +158,12 @@ app.post("/forgot-password", (req, res) => {
       }
 
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    unityOtpMemory.set(email, { otp: otpCode, expires: Date.now() + 300000 }); // Expire 5 menit
+
+    setTimeout(() => {
+      unityOtpMemory.delete(email); 
+    }, 300000); 
+    // ----------------------------------------------------
 
       req.session.resetEmail = email;
       req.session.resetOTP = otpCode;
