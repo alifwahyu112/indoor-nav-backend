@@ -1,3 +1,5 @@
+process.env.TZ = "Asia/Jakarta"; // PAKSA NODE.JS PAKAI ZONA WAKTU WIB
+
 const express = require("express");
 const mysql = require("mysql2");
 const session = require("express-session");
@@ -40,6 +42,13 @@ const db = mysql.createPool({
   ssl: sslConfig,
   waitForConnections: true,
   connectionLimit: 10,
+  timezone: '+07:00', // Kasihtau driver mysql kalau kita di WIB
+  dateStrings: true   // Ambil tanggal murni tanpa diubah-ubah zona waktunya
+});
+
+// PAKSA DATABASE TiDB MENGGUNAKAN WIB SETIAP KALI KONEK
+db.on('connection', function (connection) {
+  connection.query("SET time_zone = '+07:00'");
 });
 
 // 2. BUAT SESSION STORE MENGGUNAKAN DATABASE
@@ -100,8 +109,13 @@ app.post("/tambah", async (req, res) => {
       sql,
       [username, hashedPassword, gmail, mobile_number, BPJS_number],
       (err) => {
-        if (err)
+        if (err) {
+          // --- Tangkap error jika Username/Email kembar ---
+          if (err.code === 'ER_DUP_ENTRY') {
+            return res.send("<script>alert('❌ Gagal: Username atau Email sudah terdaftar!'); window.history.back();</script>");
+          }
           return res.status(500).send("Gagal menambah user: " + err.message);
+        }
         res.redirect("/");
       },
     );
@@ -139,11 +153,11 @@ app.get("/forgot-password", (req, res) => {
 });
 
 app.post("/forgot-password", (req, res) => {
-  const { username, email } = req.body;
+  const { email } = req.body; 
 
   db.query(
-    "SELECT * FROM admin WHERE username = ? AND email = ?",
-    [username, email],
+    "SELECT * FROM admin WHERE email = ?",
+    [email],
     async (err, result) => {
       if (err)
         return res
@@ -152,18 +166,13 @@ app.post("/forgot-password", (req, res) => {
 
       if (result.length === 0) {
         return res.render("forgot-password", {
-          error:
-            "❌ Kombinasi Username dan Email Admin tidak cocok atau tidak terdaftar!",
+          error: "❌ Email Admin tidak terdaftar di sistem kami!",
         });
       }
 
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    unityOtpMemory.set(email, { otp: otpCode, expires: Date.now() + 300000 }); // Expire 5 menit
-
-    setTimeout(() => {
-      unityOtpMemory.delete(email); 
-    }, 300000); 
-    // ----------------------------------------------------
+      
+      const usernameAsli = result[0].username; 
 
       req.session.resetEmail = email;
       req.session.resetOTP = otpCode;
@@ -175,7 +184,7 @@ app.post("/forgot-password", (req, res) => {
         html: `
         <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; max-w: 500px;">
           <h2 style="color: #2563eb;">Verifikasi Reset Password</h2>
-          <p>Halo <b>${username}</b>, Anda menerima email ini karena ada permintaan pemulihan kata sandi akun dashboard.</p>
+          <p>Halo <b>${usernameAsli}</b>, Anda menerima email ini karena ada permintaan pemulihan kata sandi akun dashboard.</p>
           <p>Berikut adalah 6 digit PIN verifikasi Anda:</p>
           <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #1e293b; font-family: monospace;">
             ${otpCode}
@@ -270,9 +279,7 @@ app.get("/riwayat_perjalanan", (req, res) => {
 
 app.post("/tambah-riwayat_perjalanan", (req, res) => {
   const { user_id, mulai, tujuan, koordinat_awal } = req.body;
-
-  const waktuServer = new Date();
-  waktuServer.setHours(waktuServer.getHours() + 7);
+  const waktuServer = new Date(); // Sudah otomatis pakai WIB karena process.env.TZ di atas
 
   db.query(
     "SELECT coordinates FROM map WHERE room_name = ?",
@@ -422,6 +429,9 @@ app.post("/tambah-admin", async (req, res) => {
 
     db.query(sql, [username, email, hashedPassword], (err) => {
       if (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.send("<script>alert('❌ Gagal: Username atau Email Admin sudah terdaftar!'); window.history.back();</script>");
+        }
         console.error("Error SQL Tambah Admin:", err.message);
         return res.status(500).send("Gagal menambah admin: " + err.message);
       }
@@ -451,6 +461,9 @@ app.post("/api/register", async (req, res) => {
       [username, hashedPassword, gmail, mobile_number, BPJS_number],
       (err) => {
         if (err) {
+          if (err.code === 'ER_DUP_ENTRY') {
+            return res.json({ status: false, error: "Username atau Email sudah terdaftar! Gunakan yang lain." });
+          }
           return res.json({ status: false, error: err.message });
         }
         res.json({ status: true, message: "Akun Unity berhasil dibuat!" });
@@ -483,7 +496,7 @@ app.post("/api/login", (req, res) => {
 // TAMBAHAN API LUPA PASSWORD KHUSUS UNITY
 // ==========================================
 
-const unityOtpMemory = new Map(); // Penyimpanan sementara OTP di memori server
+const unityOtpMemory = new Map();
 
 app.post("/api/forgot-password", (req, res) => {
   const { email } = req.body;
@@ -535,7 +548,7 @@ app.post("/api/reset-password", async (req, res) => {
       [hashedPassword, email],
       (err) => {
         if (err) return res.json({ status: false, message: "Database error" });
-        unityOtpMemory.delete(email); // Hapus OTP setelah terpakai
+        unityOtpMemory.delete(email); 
         res.json({ status: true, message: "Password berhasil diubah!" });
       },
     );
@@ -543,8 +556,6 @@ app.post("/api/reset-password", async (req, res) => {
     res.json({ status: false, message: "Server error" });
   }
 });
-
-// ==========================================
 
 app.get("/api/get-room-list", (req, res) => {
   db.query(
@@ -570,9 +581,7 @@ app.get("/api/map/:id", (req, res) => {
 
 app.post("/api/save-history", (req, res) => {
   const { user_id, mulai, tujuan, koordinat_awal } = req.body;
-
-  const waktuServer = new Date();
-  waktuServer.setHours(waktuServer.getHours() + 7);
+  const waktuServer = new Date(); // Sudah otomatis pakai WIB
 
   db.query(
     "SELECT coordinates FROM map WHERE room_name = ?",
@@ -616,6 +625,6 @@ app.post("/api/save-history", (req, res) => {
 // 3. JALANKAN SERVER
 // ==========================================
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server on port ${PORT} with WIB Timezone`));
 
 module.exports = app;
