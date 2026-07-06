@@ -57,6 +57,7 @@
           <table class="w-full border-collapse text-sm">
             <thead>
               <tr class="bg-blue-50 text-left text-gray-700 border-b border-gray-200">
+                <th class="px-4 py-3 font-semibold text-gray-700 w-10 text-center">No</th>
                 <th class="px-4 py-3 font-semibold text-gray-700 w-10">ID</th>
                 <th class="px-4 py-3 font-semibold text-gray-700">Username</th>
                 <th class="px-4 py-3 font-semibold text-gray-700">Email</th>
@@ -66,8 +67,9 @@
             </thead>
             <tbody id="tableBody">
               <% if (admins && admins.length > 0) { %>
-                <% admins.forEach(admin => { %>
+                <% admins.forEach((admin, index) => { %>
                   <tr class="data-row hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                    <td class="px-4 py-3 text-center font-medium text-gray-600"><%= admins.length - index %></td>
                     <td class="px-4 py-3 text-center font-bold"><%= admin.id %></td>
                     <td class="px-4 py-3 font-medium"><%= admin.username %></td>
                     <td class="px-4 py-3 text-gray-600"><%= admin.email || '-' %></td>
@@ -79,7 +81,7 @@
                 <% }) %>
               <% } else { %>
                 <tr class="empty-row">
-                  <td colspan="5" class="text-center py-8 text-gray-500">
+                  <td colspan="6" class="text-center py-8 text-gray-500">
                     <p class="text-lg">📂 Belum ada data admin.</p>
                   </td>
                 </tr>
@@ -88,7 +90,6 @@
           </table>
         </div>
 
-        <!-- PAGINATION UI -->
         <div class="flex flex-col sm:flex-row items-center justify-between border border-gray-200 bg-gray-50 px-4 py-3 rounded-b-lg">
           <div class="flex items-center space-x-2 text-sm text-gray-600 mb-3 sm:mb-0">
             <span>Tampilkan</span>

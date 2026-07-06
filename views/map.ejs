@@ -55,6 +55,7 @@
           <table class="w-full border-collapse text-sm">
             <thead>
               <tr class="bg-blue-50 text-left border-b border-gray-200">
+                <th class="px-4 py-3 font-semibold text-gray-700 w-10 text-center">No</th>
                 <th class="px-4 py-3 font-semibold text-gray-700">ID</th>
                 <th class="px-4 py-3 font-semibold text-gray-700">Floor_ID</th>
                 <th class="px-4 py-3 font-semibold text-gray-700">Room Name</th>
@@ -66,8 +67,9 @@
             </thead>
             <tbody id="tableBody">
               <% if (maps && maps.length > 0) { %>
-                <% maps.forEach(map => { %>
+                <% maps.forEach((map, index) => { %>
                   <tr class="data-row hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                    <td class="px-4 py-3 text-center font-medium text-gray-600"><%= maps.length - index %></td>
                     <td class="px-4 py-3 font-bold"><%= map.id_map %></td>
                     <td class="px-4 py-3"><%= map.Floor_ID %></td>
                     <td class="px-4 py-3"><%= map.room_name %></td>
@@ -98,7 +100,7 @@
                 <% }) %>
               <% } else { %>
                 <tr class="empty-row">
-                  <td colspan="7" class="text-center py-10 text-gray-500 italic">Belum ada data map.</td>
+                  <td colspan="8" class="text-center py-10 text-gray-500 italic">Belum ada data map.</td>
                 </tr>
               <% } %>
             </tbody>

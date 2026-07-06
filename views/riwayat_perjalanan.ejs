@@ -52,6 +52,7 @@
           <table class="w-full border-collapse border border-gray-200 text-sm">
             <thead>
               <tr class="bg-blue-50 text-left border-b border-gray-200">
+                <th class="border px-4 py-3 font-semibold text-gray-700 w-10 text-center">No</th>
                 <th class="border px-4 py-3 font-semibold text-gray-700">ID</th>
                 <th class="border px-4 py-3 font-semibold text-gray-700">Nama Pengguna (Unity)</th>
                 <th class="border px-4 py-3 font-semibold text-gray-700">Mulai (Scan QR)</th>
@@ -62,8 +63,9 @@
             </thead>
             <tbody id="tableBody">
               <% if (riwayat_perjalanans && riwayat_perjalanans.length > 0) { %>
-                <% riwayat_perjalanans.forEach((row) => { %>
+                <% riwayat_perjalanans.forEach((row, index) => { %>
                   <tr class="data-row hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                    <td class="px-4 py-3 text-center font-medium text-gray-600"><%= riwayat_perjalanans.length - index %></td>
                     <td class="border px-4 py-3 font-bold"><%= row.id %></td>
                     
                     <td class="border px-4 py-3 text-blue-600 font-bold capitalize">
@@ -124,7 +126,7 @@
                 <% }) %>
               <% } else { %>
                 <tr class="empty-row">
-                  <td colspan="6" class="border px-4 py-10 text-center text-gray-500 italic">Belum ada data riwayat perjalanan.</td>
+                  <td colspan="7" class="border px-4 py-10 text-center text-gray-500 italic">Belum ada data riwayat perjalanan.</td>
                 </tr>
               <% } %>
             </tbody>

@@ -58,6 +58,7 @@
           <table class="w-full border-collapse text-sm">
             <thead>
               <tr class="bg-blue-50 text-left border-b border-gray-200">
+                <th class="px-4 py-3 font-semibold text-gray-700 w-10 text-center">No</th>
                 <th class="px-4 py-3 font-semibold text-gray-700">ID</th>
                 <th class="px-4 py-3 font-semibold text-gray-700">Username</th>
                 <th class="px-4 py-3 font-semibold text-gray-700">Password</th>
@@ -69,8 +70,9 @@
             </thead>
             <tbody id="tableBody">
               <% if (users && users.length > 0) { %>
-                <% users.forEach(user => { %>
+                <% users.forEach((user, index) => { %>
                   <tr class="data-row hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                    <td class="px-4 py-3 text-center font-medium text-gray-600"><%= users.length - index %></td>
                     <td class="px-4 py-3 font-bold"><%= user.id %></td>
                     <td class="px-4 py-3"><%= user.username %></td>
                     <td class="px-4 py-3 text-gray-400 font-mono tracking-widest">********</td>
@@ -84,14 +86,13 @@
                 <% }) %>
               <% } else { %>
                 <tr class="empty-row">
-                  <td colspan="7" class="text-center py-10 text-gray-500 italic">Belum ada data user.</td>
+                  <td colspan="8" class="text-center py-10 text-gray-500 italic">Belum ada data user.</td>
                 </tr>
               <% } %>
             </tbody>
           </table>
         </div>
 
-        <!-- PAGINATION UI -->
         <div class="flex flex-col sm:flex-row items-center justify-between border border-gray-200 bg-gray-50 px-4 py-3 rounded-b-lg">
           <div class="flex items-center space-x-2 text-sm text-gray-600 mb-3 sm:mb-0">
             <span>Tampilkan</span>
