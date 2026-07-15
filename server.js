@@ -347,8 +347,6 @@ app.get("/api/map/:id", (req, res) => {
 
 app.post("/api/save-history", (req, res) => {
   const { user_id, mulai, tujuan, koordinat_awal } = req.body;
-
-  
   db.query("SELECT coordinates FROM map WHERE room_name = ?", [tujuan], (errMap, resultsMap) => {
     let koordinat_tujuan_asli = (!errMap && resultsMap.length > 0) ? resultsMap[0].coordinates : "-";
     db.query(`INSERT INTO riwayat_perjalanan (user_id, mulai, tujuan, koordinat_awal, koordinat_tujuan, tanggal, room) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
