@@ -28,7 +28,8 @@
       padding: 8px 14px; border-radius: 8px;
       cursor: pointer; font-weight: bold;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      z-index: 20; font-size: 14px;
+      z-index: 9999; /* Z-index dinaikkan agar tidak tertutup canvas */
+      font-size: 14px;
     }
     #btnBack:hover { background: #f0f0f0; }
     #infoBox {
@@ -42,7 +43,8 @@
   </style>
 </head>
 <body>
-  <button id="btnBack" onclick="history.back()">← Kembali</button>
+  <!-- Logika onclick diubah memanggil fungsi goBack() -->
+  <button id="btnBack" onclick="goBack()">← Kembali</button>
   <div id="roomLabel"></div>
   <div id="infoBox"></div>
   <div id="loading">⏳ Memuat Model BIM 3D...</div>
@@ -84,7 +86,7 @@
 
     try {
       const viewer = new Viewer({ canvasId: "myCanvas", transparent: true });
-window._viewer = viewer; // ekspos ke global untuk debug
+      window._viewer = viewer; // ekspos ke global untuk debug
       const xktLoader = new XKTLoaderPlugin(viewer);
 
       if (!urlModel || urlModel.trim() === "") {
@@ -148,6 +150,19 @@ window._viewer = viewer; // ekspos ke global untuk debug
       console.error("Xeokit Error:", err);
       loadingEl.innerText = "❌ Error Sistem Viewer 3D!";
       loadingEl.style.color = "red";
+    }
+  </script>
+
+  <!-- Script tambahan untuk menangani tombol kembali -->
+  <script>
+    function goBack() {
+      // Cek apakah ada riwayat sebelumnya di tab ini dan asalnya bukan dari luar
+      if (window.history.length > 1 && document.referrer !== "") {
+        window.history.back();
+      } else {
+        // Jika dibuka di tab baru, paksa kembali ke halaman utama (ganti '/' dengan route yang sesuai jika perlu)
+        window.location.href = '/map'; 
+      }
     }
   </script>
 </body>
